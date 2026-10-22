@@ -105,14 +105,11 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
 .badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:11px;font-weight:700}
 .badge.ok{background:#10382f;color:#5eead4}.badge.warn{background:#3a2a05;color:#fcd34d}.badge.bad{background:#3a1216;color:#fca5a5}
 @media(prefers-color-scheme:light){.badge.ok{background:#dcfce7;color:#166534}.badge.warn{background:#fef3c7;color:#92400e}.badge.bad{background:#fee2e2;color:#991b1b}}
-.notice{border:1px solid color-mix(in srgb, var(--amber) 45%, var(--line));background:color-mix(in srgb, var(--amber) 10%, var(--panel2));border-radius:9px;padding:10px 12px;font-size:13px;line-height:1.5}
 #stlDrop{border:1.5px dashed var(--line);border-radius:10px;padding:14px;background:var(--panel2);text-align:center}
 #stlDrop.drag{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, var(--panel2))}
 #canvasWrap.drag{outline:2px solid var(--accent);outline-offset:-2px}
 .statusbar{height:30px;display:flex;align-items:center;gap:16px;padding:0 12px;background:var(--panel);border-top:1px solid var(--line);font-size:11px;color:var(--muted);font-family:"JetBrains Mono",monospace;overflow:hidden;white-space:nowrap}
 .kbd{font-family:"JetBrains Mono",monospace;background:var(--chip);border:1px solid var(--line);padding:1px 5px;border-radius:4px;font-size:11px}
-.hero-strip{display:flex;gap:12px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
-.hero-strip img{width:52px;height:52px;object-fit:cover;border-radius:8px}
 #fallback{position:absolute;inset:0;display:none;place-items:center;background:radial-gradient(600px 400px at 50% 38%,#232733 0%,#101216 65%)}
 #fallback.on{display:grid}
 #fallback svg{height:88%;max-width:92%}
@@ -131,7 +128,7 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
 </head>
 <body>
 <header class="topbar">
-  <div class="logo"><div class="logo-mark">◈</div><div><b>FIGURELAB</b><span>JointLab for Action Figures</span></div></div>
+  <div class="logo"><div class="logo-mark">◈</div><div><b>FIGURELAB</b></div></div>
   <nav class="top-nav" aria-label="Modes">
     <button class="active" data-mode="pose">Pose</button>
     <button data-mode="joint">Joints</button>
@@ -179,7 +176,6 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
       </div>
       <span class="pill"><label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="showJoints" checked onchange="toggleJoints(this.checked)" style="accent-color:var(--accent)"> Show joints</label></span>
       <span class="pill">Exploded <input type="range" min="0" max="100" value="0" style="width:90px" oninput="setExploded(this.value)"> <span id="expVal">0%</span></span>
-      <span style="margin-left:auto;font-size:12px;color:var(--muted)"><span class="kbd">Drag</span> orbit · <span class="kbd">Scroll</span> zoom · <span class="kbd">Click joint</span> edit</span>
     </div>
     <div id="canvasWrap">
       <canvas id="scene"></canvas>
@@ -211,13 +207,12 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
             <circle class="jdot" data-j="kneeL" cx="131" cy="310" r="7"/><circle class="jdot" data-j="kneeR" cx="169" cy="310" r="7"/>
             <circle class="jdot" data-j="ankL" cx="131" cy="374" r="6"/><circle class="jdot" data-j="ankR" cx="169" cy="374" r="6"/>
           </g>
-          <text x="150" y="412" text-anchor="middle" fill="#9aa1b0" font-size="11" font-family="monospace">2D PREVIEW — 3D LOADS ON LIVE SITE · CLICK AN ORANGE JOINT</text>
+          <text x="150" y="412" text-anchor="middle" fill="#9aa1b0" font-size="11" font-family="monospace">2D PREVIEW</text>
         </svg>
       </div>
       <div class="view-hud">
         <div class="hud-card">
           <h4 id="hudTitle">Hero Blank — T-Pose</h4>
-          <p id="hudDesc">This is a JointLab-style workspace rebuilt for figures. Pick a joint sphere, change its type and clearance, then pose it. Clearance is what makes a printed joint snap, spin, or seize.</p>
         </div>
         <div class="hud-card hud-right">
           <div>HEIGHT <b id="hudHeight" style="color:#fff">150.0 mm</b></div>
@@ -239,10 +234,6 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
     <div class="panel-scroll">
       <!-- FIGURE -->
       <section id="tab-figure" class="tabpage on">
-        <div class="hero-strip">
-          <div style="width:52px;height:52px;border-radius:8px;background:#1a1d24;display:grid;place-items:center;font-size:28px">🦸</div>
-          <div><b style="font-size:15px">Start from a blank, not a sculpt</b><p style="margin:3px 0 0;font-size:12px;color:var(--muted);line-height:1.4">JointLab's core idea: place joints first, let the body follow. Templates set proportions + joint defaults together.</p></div>
-        </div>
         <p class="label">Body template</p>
         <div class="templates" id="templates"></div>
         <p class="label">Scale & proportions</p>
@@ -263,23 +254,15 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
           <div class="stat"><b>16</b><span>joints</span></div>
           <div class="stat"><b id="statScore">94</b><span>print score</span></div>
         </div>
-        <p class="label">How JointLab does it — in this app</p>
-        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5">
-          <div style="display:flex;gap:10px"><b style="color:var(--accent)">01 Joints</b><span>Position ball, hinge &amp; barbell joints and dial clearance.</span></div>
-          <div style="display:flex;gap:10px"><b style="color:var(--accent)">02 Separate</b><span>Use Exploded view to split into printable parts.</span></div>
-          <div style="display:flex;gap:10px"><b style="color:var(--accent)">03 Paint</b><span>Assign colors per part for AMS or hand-painting.</span></div>
-          <div style="display:flex;gap:10px"><b style="color:var(--accent)">04 Export</b><span>Download a real STL — assembled, skeleton only, shell only, or split into printable parts. Or import your own STL and re-export it at scale.</span></div>
-        </div>
       </section>
 
       <!-- JOINTS -->
       <section id="tab-joints" class="tabpage">
-        <p class="label">All joints — click to edit</p>
+        <p class="label">All joints</p>
         <div class="joint-list" id="jointList"></div>
         <p class="label">Selected joint</p>
         <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px">
           <div style="display:flex;justify-content:space-between;align-items:center"><b id="selName" style="font-size:16px">Neck</b><span class="badge ok" id="selBadge">Snap-fit</span></div>
-          <p style="margin:4px 0 0;font-size:12px;color:var(--muted)" id="selHint">Ball &amp; socket — best for heads. Wide range, hides well in a collar.</p>
         </div>
         <p class="label">Joint type</p>
         <div class="type-grid" id="typeGrid"></div>
@@ -290,21 +273,20 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
         </div>
         <div class="clearance-viz" style="margin-top:12px">
           <div class="socket" id="socketViz" style="width:72px;height:72px"><div class="ball" id="ballViz" style="width:44px;height:44px"></div></div>
-          <div><b id="vizTitle" style="font-size:13px">0.30 mm gap — snap-fit</b><p style="margin:3px 0 0;font-size:12px;color:var(--muted);line-height:1.45" id="vizText">For FDM PLA/PETG. Holds a pose, still pops apart for painting. This is the JointLab default for shoulders &amp; hips.</p></div>
+          <div><b id="vizTitle" style="font-size:13px">0.30 mm gap — snap-fit</b></div>
         </div>
-        <div class="notice" style="margin-top:10px"><b>Printer note:</b> Resin needs less clearance (0.15–0.20 mm). FDM needs more — your nozzle accuracy <i>is</i> the joint tolerance. When in doubt, print one test joint first.</div>
       </section>
 
       <!-- POSE -->
       <section id="tab-pose" class="tabpage">
         <p class="label">Pose presets</p>
         <div class="pose-grid">
-          <button onclick="applyPose('tpose')">T-Pose <span>Calibration / rigging</span></button>
-          <button onclick="applyPose('apose')">A-Pose <span>Relaxed stance</span></button>
-          <button onclick="applyPose('hero')">Hero Landing <span>Kneeling, fist down</span></button>
-          <button onclick="applyPose('walk')">Walking <span>Mid-stride</span></button>
-          <button onclick="applyPose('sit')">Sitting <span>Tests hips + knees</span></button>
-          <button onclick="applyPose('reach')">Reach &amp; Aim <span>One arm forward</span></button>
+          <button onclick="applyPose('tpose')">T-Pose</button>
+          <button onclick="applyPose('apose')">A-Pose</button>
+          <button onclick="applyPose('hero')">Hero Landing</button>
+          <button onclick="applyPose('walk')">Walking</button>
+          <button onclick="applyPose('sit')">Sitting</button>
+          <button onclick="applyPose('reach')">Reach &amp; Aim</button>
         </div>
         <p class="label">Pose selected joint — <span id="poseJointName" style="color:var(--ink)">Neck</span></p>
         <div style="display:flex;flex-direction:column;gap:10px">
@@ -330,19 +312,18 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
           <div><div style="font-size:13px;margin-bottom:6px">Accent / armor</div><div class="swatches" data-region="accent"></div></div>
           <div><div style="font-size:13px;margin-bottom:6px">Head / skin</div><div class="swatches" data-region="skin"></div></div>
         </div>
-        <p class="label">STL import — your own figure file</p>
+        <p class="label">STL import</p>
         <div id="stlDrop">
           <b style="font-size:14px">Drop an STL file here</b>
-          <p style="font-size:12px;color:var(--muted);margin:6px 0 10px">…or drop it on the 3D viewport. Binary or ASCII, parsed entirely in your browser.</p>
-          <button class="btn" type="button" onclick="document.getElementById('stlFile').click()">Choose STL file…</button>
+          <div style="margin-top:10px"><button class="btn" type="button" onclick="document.getElementById('stlFile').click()">Choose STL file…</button></div>
           <input type="file" id="stlFile" accept=".stl,model/stl,application/octet-stream" style="display:none" onchange="if(this.files&&this.files[0])handleSTLFile(this.files[0])">
-          <p id="importMeta" style="font-size:12px;color:var(--muted);line-height:1.5;margin:10px 0 0;text-align:left">No STL imported yet. An imported model is auto-centred, grounded and scaled to the chosen figure height, shown in the viewport next to the parametric figure, and can be re-exported as a binary STL.</p>
+          <p id="importMeta" style="font-size:12px;color:var(--muted);line-height:1.5;margin:10px 0 0;text-align:left">No STL imported.</p>
           <div id="importActions" style="display:none;flex-direction:column;gap:8px;margin-top:10px;text-align:left">
             <button class="btn btn-primary" onclick="downloadSTL('imported')">Download STL — Imported model ↓</button>
             <div style="display:flex;gap:8px"><button class="btn" style="flex:1" id="importOverlayBtn" onclick="toggleImportOverlay()">Overlay on figure</button><button class="btn" style="flex:1" onclick="clearImported()">Remove import</button></div>
           </div>
         </div>
-        <p class="label">STL export — printable mesh</p>
+        <p class="label">STL export</p>
         <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px">
           <div style="display:flex;flex-direction:column;gap:8px">
             <button class="btn btn-primary" onclick="downloadSTL('assembled')">Download STL — Assembled figure ↓</button>
@@ -351,9 +332,9 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
             <button class="btn" onclick="downloadSTL('parts')">Download STL — 17 parts, laid out ↓</button>
           </div>
           <label style="display:flex;gap:7px;align-items:center;font-size:13px;margin-top:10px;cursor:pointer"><input type="checkbox" id="stlBalls" checked style="accent-color:var(--accent)"> Include joint balls &amp; socket collars</label>
-          <p id="stlMeta" style="font-size:12px;color:var(--muted);line-height:1.5;margin:8px 0 0">Binary STL, millimetres, Z-up. <b style="color:var(--ink)">Skeleton</b> = the inner articulated frame on its own: joint balls (⌀ from the Joints tab) joined by bone rods, no outer body. <b style="color:var(--ink)">Shell</b> = the surrounding figure on its own: outer body volumes with socket collars whose bores are sized ball + 2× clearance, no skeleton inside. Assembled combines both in your current pose, template and scale. Parts layout separates all 17 parts on one plate.</p>
+          <p id="stlMeta" style="font-size:12px;color:var(--muted);line-height:1.5;margin:8px 0 0"></p>
         </div>
-        <p class="label">Parts list — 17 parts</p>
+        <p class="label">Parts list</p>
         <div style="overflow:auto;border:1px solid var(--line);border-radius:9px"><table><thead><tr><th>Part</th><th>Joint</th><th>Size</th><th>Status</th></tr></thead><tbody id="partsBody"></tbody></table></div>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
           <button class="btn" style="flex:1" onclick="downloadPlan()">Plan JSON</button>
@@ -364,17 +345,17 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
   </aside>
 </div>
 
-<footer class="statusbar"><span>Mode: <b id="statusMode" style="color:var(--ink)">Pose</b></span><span>Selection: Face</span><span>Cursor 3D: X 0.00 · Y 0.00 · Z 0.00 mm</span><span style="margin-left:auto">G/R/S transform · Ctrl snap · Esc cancel — Blender-style, like JointLab</span></footer>
+<footer class="statusbar"><span>Mode: <b id="statusMode" style="color:var(--ink)">Pose</b></span><span>Selection: Face</span><span>Cursor 3D: X 0.00 · Y 0.00 · Z 0.00 mm</span></footer>
 
 <script>
 // ---------- Data ----------
 const JOINT_TYPES={
-  ball:{label:'Ball & Socket',hint:'Best for head, shoulders, hips. Wide range, hides well.'},
-  hinge:{label:'Hinge',hint:'One axis only. Clean, strong — elbows & knees if you want a toy-like look.'},
-  double:{label:'Double Hinge',hint:'Two hinges = double the bend. The modern elbow/knee standard.'},
-  swivel:{label:'Swivel',hint:'Pure rotation. Waist, biceps, thighs — preserves the sculpt.'},
-  barbell:{label:'Barbell',hint:'Ball on both ends of a peg. Best torso joint — great range, easy to pop apart.'},
-  ballhinge:{label:'Ball Hinge',hint:'Ball + hinge combo. The neck & ankle favourite for expressive tilt.'},
+  ball:{label:'Ball & Socket'},
+  hinge:{label:'Hinge'},
+  double:{label:'Double Hinge'},
+  swivel:{label:'Swivel'},
+  barbell:{label:'Barbell'},
+  ballhinge:{label:'Ball Hinge'},
 };
 let joints=[
  {id:'neck',name:'Neck',type:'ballhinge',ball:5.0,clear:0.25,fric:60},
@@ -397,16 +378,16 @@ let joints=[
 let selectedJoint=joints[0];
 let currentScale=150, currentTemplate='hero';
 const templates=[
- {id:'hero',name:'Hero Blank',desc:'Classic 1:12 proportions, broad shoulders',head:1,shoulder:1.15,bulk:1.1},
- {id:'slim',name:'Slim / Anime',desc:'Longer limbs, smaller head joint',head:0.9,shoulder:0.9,bulk:0.8},
- {id:'bulk',name:'Bulk / Mech',desc:'Heavy armor-ready, oversized balls',head:0.95,shoulder:1.35,bulk:1.45},
- {id:'chibi',name:'Chibi',desc:'Big head, short limbs, cute proportions',head:1.55,shoulder:0.85,bulk:0.9},
- {id:'skeleton',name:'Skeleton',desc:'Thin blank for custom sculpting over it',head:1,shoulder:0.95,bulk:0.62},
- {id:'kid',name:'Kid Hero',desc:'Shorter torso, younger proportions',head:1.2,shoulder:0.9,bulk:0.85},
+ {id:'hero',name:'Hero Blank',head:1,shoulder:1.15,bulk:1.1},
+ {id:'slim',name:'Slim / Anime',head:0.9,shoulder:0.9,bulk:0.8},
+ {id:'bulk',name:'Bulk / Mech',head:0.95,shoulder:1.35,bulk:1.45},
+ {id:'chibi',name:'Chibi',head:1.55,shoulder:0.85,bulk:0.9},
+ {id:'skeleton',name:'Skeleton',head:1,shoulder:0.95,bulk:0.62},
+ {id:'kid',name:'Kid Hero',head:1.2,shoulder:0.9,bulk:0.85},
 ];
 // templates UI
 const tWrap=document.getElementById('templates');
-templates.forEach(t=>{const b=document.createElement('button');b.className='temp'+(t.id==='hero'?' on':'');b.innerHTML=`<b>${t.name}</b><span>${t.desc}</span>`;b.onclick=()=>{document.querySelectorAll('.temp').forEach(x=>x.classList.remove('on'));b.classList.add('on');applyTemplate(t)};tWrap.appendChild(b)});
+templates.forEach(t=>{const b=document.createElement('button');b.className='temp'+(t.id==='hero'?' on':'');b.innerHTML=`<b>${t.name}</b>`;b.onclick=()=>{document.querySelectorAll('.temp').forEach(x=>x.classList.remove('on'));b.classList.add('on');applyTemplate(t)};tWrap.appendChild(b)});
 
 // ---------- Three.js figure ----------
 let scene,camera,renderer,controls,figure={},jointMeshes={},partMeshes=[],mats={},wire=false;
@@ -511,7 +492,6 @@ function clearLabel(c){return c<0.18?['Too tight','Seized risk']:c<=0.35?['Snap-
 function selectJoint(j){
   selectedJoint=j;
   document.getElementById('selName').textContent=j.name;
-  document.getElementById('selHint').textContent=JOINT_TYPES[j.type].hint;
   document.getElementById('poseJointName').textContent=j.name;
   document.getElementById('hudSel').textContent='— '+j.name;
   document.getElementById('r-ball').value=j.ball*10; document.getElementById('r-clear').value=j.clear*100; document.getElementById('r-fric').value=j.fric;
@@ -535,14 +515,13 @@ function updateJointViz(){
   document.getElementById('v-fric').textContent=j.fric+'%';
   document.getElementById('selBadge').textContent=badge; document.getElementById('selBadge').className='badge '+(j.clear<0.18?'bad':j.clear<=0.35?'ok':'warn');
   document.getElementById('vizTitle').textContent=`${j.clear.toFixed(2)} mm gap — ${lab.toLowerCase()}`;
-  document.getElementById('vizText').textContent= j.clear<0.18?'Too tight for FDM — will fuse or crack on insertion. Increase to at least 0.20 mm.': j.clear<=0.35?'For FDM PLA/PETG. Holds a pose, still pops apart for painting. JointLab default for shoulders & hips.':'Free movement, less pose-holding. Good for waists and spinning parts — add friction or a ratchet if it must hold.';
   document.getElementById('ballViz').style.width=(28+j.ball*3)+'px'; document.getElementById('ballViz').style.height=(28+j.ball*3)+'px';
   document.getElementById('socketViz').style.width=(52+j.clear*70)+'px'; document.getElementById('socketViz').style.height=(52+j.clear*70)+'px';
   document.getElementById('hudClear').textContent=`${j.clear.toFixed(2)} mm · ${badge}`;
   if(jointMeshes[j.id]) jointMeshes[j.id].scale.setScalar(1.4 + j.ball/8);
 }
 function renderROM(){
-  const el=document.getElementById('romList'); if(!el) return; el.innerHTML=joints.slice(0,6).map(j=>`<div style="display:flex;justify-content:space-between"><span>${j.name}</span><b style="color:${clearColor(j.clear)}">${JOINT_TYPES[j.type].label}</b></div>`).join('')+'<p style="font-size:12px;color:var(--muted);margin:4px 0">Double hinges bend ~135°, balls ~90° in all directions, barbells ~60° with twist. If a pose clips the torso, widen the socket — don\'t shrink the ball.</p>';
+  const el=document.getElementById('romList'); if(!el) return; el.innerHTML=joints.slice(0,6).map(j=>`<div style="display:flex;justify-content:space-between"><span>${j.name}</span><b style="color:${clearColor(j.clear)}">${JOINT_TYPES[j.type].label}</b></div>`).join('');
 }
 // pose
 const poseMap={neck:'neck',chest:'chest',waist:'waist',shL:'shL',shR:'shR',elL:'elL',elR:'elR',wrL:'wrL',wrR:'wrR',hipL:'hipL',hipR:'hipR',kneeL:'kneeL',kneeR:'kneeR',ankL:'ankL',ankR:'ankR'};
@@ -589,7 +568,7 @@ const partsData=[['Head','Ball Hinge','42 mm'],['Torso — Upper','Barbell','54 
 function renderParts(){const tb=document.getElementById('partsBody'); const f=currentScale/150; tb.innerHTML=partsData.map(p=>{const size=Math.round(parseInt(p[2])*f); const j=joints.find(x=>p[1].toLowerCase().includes(x.type))||joints[0]; const ok=j.clear>=0.18&&j.clear<=0.45; return `<tr><td><b>${p[0]}</b></td><td>${p[1]}</td><td>${size} mm</td><td><span class="badge ${ok?'ok':'warn'}">${ok?'Ready':'Check'}</span></td></tr>`}).join('')}
 function updatePrintScore(){const bad=joints.filter(j=>j.clear<0.18||j.clear>0.5).length; const score=Math.max(62,98-bad*9); document.getElementById('statScore').textContent=score; document.getElementById('polyCount').textContent=(4820+joints.length*40).toLocaleString(); renderParts()}
 function downloadBlob(name,content,type='text/plain'){const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
-function downloadPlan(){const plan={figure:templates.find(t=>t.id===currentTemplate)?.name||'Hero Blank',scale_mm:currentScale,material:document.getElementById('matSel').value,joints:joints.map(j=>({name:j.name,type:JOINT_TYPES[j.type].label,ball_mm:j.ball,clearance_mm:j.clear,friction_pct:j.fric})),exported:new Date().toISOString(),note:'FigureLab print plan — modeled after JointLab 3D articulation workflow. Print one test joint before a full plate.'}; downloadBlob('figurelab-print-plan.json',JSON.stringify(plan,null,2),'application/json')}
+function downloadPlan(){const plan={figure:templates.find(t=>t.id===currentTemplate)?.name||'Hero Blank',scale_mm:currentScale,material:document.getElementById('matSel').value,joints:joints.map(j=>({name:j.name,type:JOINT_TYPES[j.type].label,ball_mm:j.ball,clearance_mm:j.clear,friction_pct:j.fric})),exported:new Date().toISOString(),note:'FigureLab print plan'}; downloadBlob('figurelab-print-plan.json',JSON.stringify(plan,null,2),'application/json')}
 function downloadCSV(){const rows=[['Part','Joint','Ball mm','Clearance mm'],...joints.map(j=>[j.name,JOINT_TYPES[j.type].label,j.ball,j.clear])]; downloadBlob('figurelab-parts.csv',rows.map(r=>r.join(',')).join('\n'),'text/csv')}
 // ---------- Real STL export (binary, millimetres, Z-up) ----------
 function triN(a,b,c){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;return [nx/l,ny/l,nz/l]}
@@ -664,7 +643,7 @@ function shellTris(){const raw=collectSceneRaw();if(!raw.length)return shellFall
 // ---------- STL import (binary or ASCII, parsed in-browser) ----------
 let importedSTL=null,importedMesh=null,importOverlay=false;
 function parseSTLBuffer(buf){const dv=new DataView(buf);let tris=[],format='ascii',binCount=0,isBinary=false;if(buf.byteLength>=84){binCount=dv.getUint32(80,true);if(binCount>0&&84+binCount*50===buf.byteLength)isBinary=true}if(isBinary){format='binary';for(let i=0;i<binCount;i++){const o=84+i*50+12,vs=[];for(let k=0;k<3;k++)vs.push([dv.getFloat32(o+k*12,true),dv.getFloat32(o+k*12+4,true),dv.getFloat32(o+k*12+8,true)]);if(vs.every(v=>v.every(Number.isFinite)))tris.push(vs)}}else{const text=new TextDecoder().decode(buf);if(!/facet/i.test(text))throw new Error('no facets found — not an STL?');const verts=[],re=/vertex\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)/g;let m;while((m=re.exec(text))!==null){const v=[parseFloat(m[1]),parseFloat(m[2]),parseFloat(m[3])];if(v.every(Number.isFinite))verts.push(v)}for(let i=0;i+2<verts.length;i+=3)tris.push([verts[i],verts[i+1],verts[i+2]])}if(!tris.length)throw new Error('no triangles found');const mn=[1e30,1e30,1e30],mx=[-1e30,-1e30,-1e30];tris.forEach(tr=>tr.forEach(v=>{for(let a=0;a<3;a++){mn[a]=Math.min(mn[a],v[a]);mx[a]=Math.max(mx[a],v[a])}}));const dims={w:mx[0]-mn[0],d:mx[1]-mn[1],h:mx[2]-mn[2]};if(!(dims.h>0)){dims.h=dims.d}return{name:'model.stl',format,tris,min:mn,max:mx,dims}}
-function renderImportedMeta(){const el=document.getElementById('importMeta'),act=document.getElementById('importActions');if(!importedSTL){if(el)el.textContent='No STL imported yet. An imported model is auto-centred, grounded and scaled to the chosen figure height, shown in the viewport next to the parametric figure, and can be re-exported as a binary STL.';if(act)act.style.display='none';return}const d=importedSTL.dims,sc=currentScale/(d.h||1);if(el)el.innerHTML=`<b style="color:var(--ink)">${importedSTL.name}</b> — ${importedSTL.format} STL · ${importedSTL.tris.length.toLocaleString()} triangles<br>Original size: <b style="color:var(--ink)">${d.w.toFixed(1)} × ${d.d.toFixed(1)} × ${d.h.toFixed(1)} mm</b> (W × D × H, Z-up)<br>In viewport: centred &amp; grounded, scaled ${sc.toFixed(3)}× to <b style="color:var(--ink)">${currentScale} mm</b> tall — ${(d.w*sc).toFixed(1)} × ${(d.d*sc).toFixed(1)} × ${(d.h*sc).toFixed(1)} mm. Re-export writes exactly that scaled size.`;if(act)act.style.display='flex';window.__importedSTLInfo={name:importedSTL.name,format:importedSTL.format,triangles:importedSTL.tris.length,dims:{...d},scaledHeight:currentScale,scale:sc}}
+function renderImportedMeta(){const el=document.getElementById('importMeta'),act=document.getElementById('importActions');if(!importedSTL){if(el)el.textContent='No STL imported.';if(act)act.style.display='none';return}const d=importedSTL.dims,sc=currentScale/(d.h||1);if(el)el.innerHTML=`<b style="color:var(--ink)">${importedSTL.name}</b> — ${importedSTL.format} STL · ${importedSTL.tris.length.toLocaleString()} triangles<br>${d.w.toFixed(1)} × ${d.d.toFixed(1)} × ${d.h.toFixed(1)} mm → ${currentScale} mm tall`;if(act)act.style.display='flex';window.__importedSTLInfo={name:importedSTL.name,format:importedSTL.format,triangles:importedSTL.tris.length,dims:{...d},scaledHeight:currentScale,scale:sc}}
 function showImportedMesh(){if(!importedSTL)return;if(typeof THREE==='undefined'||!scene||!figure.root||!figure.root.traverse)return;try{const box=new THREE.Box3().setFromObject(figure.root),size=new THREE.Vector3();box.getSize(size);const sceneH=size.y||2.9,sceneW=size.x||1,k=sceneH/(importedSTL.dims.h||1),cx=(importedSTL.min[0]+importedSTL.max[0])/2,cy=(importedSTL.min[1]+importedSTL.max[1])/2,minZ=importedSTL.min[2];const pos=new Float32Array(importedSTL.tris.length*9);importedSTL.tris.forEach((tr,i)=>{tr.forEach((v,k2)=>{const o=i*9+k2*3;pos[o]=(v[0]-cx)*k;pos[o+1]=(v[2]-minZ)*k;pos[o+2]=-(v[1]-cy)*k})});if(importedMesh){scene.remove(importedMesh);importedMesh.geometry.dispose()}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.computeVertexNormals();importedMesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x22c5a0,roughness:0.55,metalness:0.05,flatShading:true,side:THREE.DoubleSide}));const impW=importedSTL.dims.w*k;importedMesh.position.y=box.min.y;importedMesh.position.x=importOverlay?0:(sceneW/2+impW/2+0.35);scene.add(importedMesh)}catch(e){/* viewport unavailable (2D fallback) — import data + re-export still work */}}
 function handleSTLFile(file){if(!file)return;const done=buf=>{try{const parsed=parseSTLBuffer(buf);parsed.name=file.name||'model.stl';importedSTL=parsed;renderImportedMeta();showImportedMesh();switchTabByName('print')}catch(err){const el=document.getElementById('importMeta');if(el)el.textContent='Could not parse that STL: '+(err&&err.message?err.message:err)}};if(file.arrayBuffer){file.arrayBuffer().then(done).catch(()=>{const r=new FileReader();r.onload=()=>done(r.result);r.readAsArrayBuffer(file)})}else{const r=new FileReader();r.onload=()=>done(r.result);r.readAsArrayBuffer(file)}}
 function clearImported(){importedSTL=null;window.__importedSTLInfo=null;if(importedMesh&&typeof THREE!=='undefined'&&scene){scene.remove(importedMesh);importedMesh.geometry.dispose();importedMesh=null}const fi=document.getElementById('stlFile');if(fi)fi.value='';renderImportedMeta()}
@@ -672,7 +651,7 @@ function toggleImportOverlay(){importOverlay=!importOverlay;const b=document.get
 function importedTris(){if(!importedSTL)return[];const sc=currentScale/(importedSTL.dims.h||1),cx=(importedSTL.min[0]+importedSTL.max[0])/2,cy=(importedSTL.min[1]+importedSTL.max[1])/2,minZ=importedSTL.min[2];return importedSTL.tris.map(tr=>tr.map(v=>[(v[0]-cx)*sc,(v[1]-cy)*sc,(v[2]-minZ)*sc]))}
 function downloadSTL(kind){
   const meta=document.getElementById('stlMeta');
-  if(kind==='imported'&&!importedSTL){const im=document.getElementById('importMeta');if(im)im.textContent='Import an STL first — choose a file or drop one on the import panel or the viewport.';switchTabByName('print');return}
+  if(kind==='imported'&&!importedSTL){const im=document.getElementById('importMeta');if(im)im.textContent='Import an STL first.';switchTabByName('print');return}
   let tris,name,note='';
   if(kind==='parts'){tris=partsTris();name=`figurelab-parts-${currentScale}mm.stl`;note=' 17 separate parts on one plate; socket bores = ball + 2× clearance.'}
   else if(kind==='skeleton'){tris=skeletonTris();name=`figurelab-skeleton-${currentScale}mm.stl`;note=' Skeleton only — joint balls at the ⌀ set in the Joints tab, joined by bone rods, plus skull & pelvis cores. No outer shell.'}
@@ -681,7 +660,7 @@ function downloadSTL(kind){
   else{tris=assembledTris();name=`figurelab-figure-${currentScale}mm.stl`;note=' Current pose & proportions baked in (skeleton + shell combined).'}
   const blob=stlBlob(tris);
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);
-  if(meta)meta.innerHTML=`<b style="color:var(--ink)">${name}</b> — ${tris.length.toLocaleString()} triangles · ${(blob.size/1024).toFixed(0)} KB · ${currentScale} mm · binary STL, Z-up.`+note;
+  if(meta)meta.innerHTML=`<b style="color:var(--ink)">${name}</b> — ${tris.length.toLocaleString()} triangles · ${(blob.size/1024).toFixed(0)} KB · ${currentScale} mm · binary STL, Z-up.`;
 }
 // ---------- Drag & drop STL import ----------
 (function(){const dz=document.getElementById('stlDrop'),cw=document.getElementById('canvasWrap');const bind=(el,cls)=>{if(!el)return;['dragenter','dragover'].forEach(ev=>el.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();el.classList.add(cls)}));['dragleave','drop'].forEach(ev=>el.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();el.classList.remove(cls)}));el.addEventListener('drop',e=>{const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)handleSTLFile(f)})};bind(dz,'drag');bind(cw,'drag');window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>e.preventDefault())})();
