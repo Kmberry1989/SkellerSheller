@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="color-scheme" content="light dark"/>
+<link rel="icon" href="data:,"/>
+<title>FigureLab — Action Figure Joint Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+:root{
+  --bg:#0e0f12; --panel:#16181e; --panel2:#1d2028; --panel3:#222631;
+  --line:#2a2e3a; --ink:#ece9e2; --muted:#9aa1b0; --faint:#6b7280;
+  --accent:#ff5a1f; --accent-ink:#fff; --teal:#22c5a0; --amber:#ffb020; --red:#ff4757;
+  --chip:#232734; --viewport:#101216;
+  --radius:10px;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#e9e7e1; --panel:#ffffff; --panel2:#f4f2ec; --panel3:#ece9e1; --line:#ddd8cc; --ink:#17181c; --muted:#5b606e; --faint:#8a8f9a; --chip:#efede6; --viewport:#14161a; }
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:"Barlow",system-ui,sans-serif;background:var(--bg);color:var(--ink);overflow-x:hidden}
+button,input,select{font:inherit}
+a{color:inherit}
+.topbar{height:52px;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.logo{display:flex;align-items:center;gap:10px;font-family:"Barlow Condensed",sans-serif;letter-spacing:.04em}
+.logo-mark{width:32px;height:32px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800;font-size:18px;border-radius:7px}
+.logo b{font-size:20px;line-height:1}
+.logo span{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;font-family:"Barlow",sans-serif;font-weight:600}
+.top-nav{display:flex;gap:4px;margin-left:8px}
+.top-nav button{background:transparent;border:0;color:var(--muted);padding:7px 10px;border-radius:7px;cursor:pointer;font-weight:600;font-size:13px}
+.top-nav button.active{background:var(--chip);color:var(--ink)}
+.top-stats{margin-left:auto;display:flex;gap:14px;align-items:center;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted)}
+.top-stats b{color:var(--ink)}
+.btn{border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{filter:brightness(1.08)}
+.layout{display:grid;grid-template-columns:56px 1fr 360px;min-height:calc(100vh - 52px - 30px)}
+@media(max-width:980px){.layout{grid-template-columns:52px 1fr}.inspector{grid-column:1/-1;order:3}.viewport-wrap{min-height:520px}}
+.rail{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:10px 6px;gap:6px}
+.rail button{width:44px;height:48px;border:0;background:transparent;color:var(--muted);border-radius:9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.rail button.active{background:var(--accent);color:#fff}
+.rail button svg{width:20px;height:20px}
+.viewport-wrap{position:relative;background:var(--viewport);display:flex;flex-direction:column;min-width:0}
+.view-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;background:color-mix(in srgb, var(--panel) 92%, transparent);border-bottom:1px solid var(--line);z-index:2}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);padding:6px 9px;border-radius:999px;font-size:12px;font-weight:600}
+.pill select{background:transparent;border:0;color:var(--ink);font-weight:700;outline:0}
+.seg{display:flex;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:2px}
+.seg button{border:0;background:transparent;padding:6px 10px;border-radius:999px;cursor:pointer;font-weight:700;font-size:12px;color:var(--muted)}
+.seg button.on{background:var(--ink);color:var(--bg)}
+#canvasWrap{flex:1;position:relative;min-height:460px}
+#scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+.view-hud{position:absolute;left:12px;bottom:12px;right:12px;display:flex;justify-content:space-between;gap:10px;pointer-events:none}
+.hud-card{pointer-events:auto;background:rgba(12,13,16,.88);color:#f2efe8;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;backdrop-filter:blur(6px);max-width:360px}
+.hud-card h4{margin:0 0 4px;font-size:13px}
+.hud-card p{margin:0;font-size:12px;line-height:1.45;color:#c8cbd3}
+.hud-right{text-align:right;font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1.6}
+.inspector{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;background:transparent;border:0;border-bottom:2px solid transparent;padding:12px 4px;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.panel-scroll{overflow:auto;padding:14px}
+.tabpage{display:none}.tabpage.on{display:block}
+.label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:16px 0 8px}
+.label:first-child{margin-top:0}
+.templates{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.temp{border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:10px;cursor:pointer;text-align:left}
+.temp.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.temp b{font-size:14px;display:block}.temp span{font-size:12px;color:var(--muted);line-height:1.35;display:block;margin-top:2px}
+.temp .fig{font-size:22px;line-height:1;margin-bottom:6px}
+.scale-row{display:flex;gap:6px;flex-wrap:wrap}
+.scale-row button{flex:1;padding:9px 4px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;font-weight:700}
+.scale-row button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px}
+.stat b{font-size:18px;display:block;line-height:1}.stat span{font-size:11px;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.range-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:13px}
+.range-val{font-family:"JetBrains Mono",monospace;font-size:12px;background:var(--chip);padding:3px 7px;border-radius:6px;min-width:58px;text-align:center}
+.joint-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto;padding-right:2px}
+.joint-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);background:var(--panel2);border-radius:9px;cursor:pointer;text-align:left;width:100%}
+.joint-item.on{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, var(--panel2))}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.joint-item b{font-size:13px;display:block;line-height:1.1}.joint-item span{font-size:11px;color:var(--muted)}
+.joint-item em{margin-left:auto;font-style:normal;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted)}
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.type-grid button{padding:8px;border:1px solid var(--line);background:var(--panel2);border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;text-align:left}
+.type-grid button.on{border-color:var(--teal);background:color-mix(in srgb, var(--teal) 12%, var(--panel2))}
+.clearance-viz{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
+.ball{border-radius:50%;background:var(--accent);flex-shrink:0;transition:.2s}
+.socket{border:2px dashed var(--muted);border-radius:50%;display:grid;place-items:center;flex-shrink:0}
+.pose-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pose-grid button{padding:11px 10px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;font-weight:700;text-align:left}
+.pose-grid button span{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.swatch{width:32px;height:32px;border-radius:8px;border:2px solid transparent;cursor:pointer}
+.swatch.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--bg)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:var(--muted);font-weight:600;padding:7px 6px;border-bottom:1px solid var(--line)}
+td{padding:7px 6px;border-bottom:1px solid var(--line)}
+.badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:11px;font-weight:700}
+.badge.ok{background:#10382f;color:#5eead4}.badge.warn{background:#3a2a05;color:#fcd34d}.badge.bad{background:#3a1216;color:#fca5a5}
+@media(prefers-color-scheme:light){.badge.ok{background:#dcfce7;color:#166534}.badge.warn{background:#fef3c7;color:#92400e}.badge.bad{background:#fee2e2;color:#991b1b}}
+.notice{border:1px solid color-mix(in srgb, var(--amber) 45%, var(--line));background:color-mix(in srgb, var(--amber) 10%, var(--panel2));border-radius:9px;padding:10px 12px;font-size:13px;line-height:1.5}
+.statusbar{height:30px;display:flex;align-items:center;gap:16px;padding:0 12px;background:var(--panel);border-top:1px solid var(--line);font-size:11px;color:var(--muted);font-family:"JetBrains Mono",monospace;overflow:hidden;white-space:nowrap}
+.kbd{font-family:"JetBrains Mono",monospace;background:var(--chip);border:1px solid var(--line);padding:1px 5px;border-radius:4px;font-size:11px}
+.hero-strip{display:flex;gap:12px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
+.hero-strip img{width:52px;height:52px;object-fit:cover;border-radius:8px}
+#fallback{position:absolute;inset:0;display:none;place-items:center;background:radial-gradient(600px 400px at 50% 38%,#232733 0%,#101216 65%)}
+#fallback.on{display:grid}
+#fallback svg{height:88%;max-width:92%}
+#fallback .jdot{cursor:pointer}
+@media(max-width:760px){
+  .topbar{height:auto;flex-wrap:wrap;padding:8px 10px;gap:8px}
+  .top-stats{display:none}
+  .top-nav{order:3;width:100%;overflow-x:auto}
+  .topbar .btn{padding:7px 9px;font-size:12px}
+  .logo span{display:none}
+  .view-hud{flex-direction:column}
+  .hud-right{display:none}
+  .statusbar span:last-child{display:none}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo"><div class="logo-mark">◈</div><div><b>FIGURELAB</b><span>JointLab for Action Figures</span></div></div>
+  <nav class="top-nav" aria-label="Modes">
+    <button class="active" data-mode="pose">Pose</button>
+    <button data-mode="joint">Joints</button>
+    <button data-mode="sculpt">Sculpt</button>
+    <button data-mode="print">Export</button>
+  </nav>
+  <div class="top-stats">
+    <span>Polys <b id="polyCount">4,820</b></span>
+    <span>Joints <b>16</b></span>
+    <span>Parts <b>17</b></span>
+    <span style="color:var(--teal)">● Ready</span>
+  </div>
+  <button class="btn" onclick="resetAll()">Reset</button>
+  <button class="btn btn-primary" onclick="downloadSTL('assembled')">Export STL ↓</button>
+</header>
+
+<div class="layout">
+  <!-- RAIL -->
+  <aside class="rail" aria-label="Tools">
+    <button class="active" data-tool="select" onclick="setTool(this,'select')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 7-6 2-2 6z"/></svg>Select</button>
+    <button data-tool="pose" onclick="setTool(this,'pose')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2"/><path d="M12 7v5M8 21l4-6 4 6M5 10l7-1 7 1"/></svg>Pose</button>
+    <button data-tool="joint" onclick="setTool(this,'joint')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M9.5 9.5l5 5"/></svg>Joint</button>
+    <button data-tool="split" onclick="setTool(this,'split')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h4M17 12h4"/></svg>Split</button>
+    <button data-tool="paint" onclick="setTool(this,'paint')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-.8 2-1.7 0-.9-.7-1.3-.7-2.1 0-.8.7-1.2 1.7-1.2H17a4 4 0 0 0 4-4c0-5-4-9-9-9z"/></svg>Paint</button>
+    <div style="flex:1"></div>
+    <button onclick="toggleWireframe()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>Wire</button>
+  </aside>
+
+  <!-- VIEWPORT -->
+  <main class="viewport-wrap">
+    <div class="view-toolbar">
+      <span class="pill">Scale
+        <select id="scaleSel" onchange="setScale(this.value)">
+          <option value="100">1:18 — 100 mm</option>
+          <option value="150" selected>1:12 — 150 mm</option>
+          <option value="180">1:10 — 180 mm</option>
+          <option value="300">1:6 — 300 mm</option>
+        </select>
+      </span>
+      <div class="seg" role="group" aria-label="View">
+        <button class="on" onclick="setView(this,'orbit')">Orbit</button>
+        <button onclick="setView(this,'front')">Front</button>
+        <button onclick="setView(this,'side')">Side</button>
+        <button onclick="setView(this,'top')">Top</button>
+      </div>
+      <span class="pill"><label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="showJoints" checked onchange="toggleJoints(this.checked)" style="accent-color:var(--accent)"> Show joints</label></span>
+      <span class="pill">Exploded <input type="range" min="0" max="100" value="0" style="width:90px" oninput="setExploded(this.value)"> <span id="expVal">0%</span></span>
+      <span style="margin-left:auto;font-size:12px;color:var(--muted)"><span class="kbd">Drag</span> orbit · <span class="kbd">Scroll</span> zoom · <span class="kbd">Click joint</span> edit</span>
+    </div>
+    <div id="canvasWrap">
+      <canvas id="scene"></canvas>
+      <div id="fallback" role="img" aria-label="Articulated action figure blank with orange joint markers at neck, shoulders, elbows, wrists, chest, waist, hips, knees and ankles">
+        <svg viewBox="0 0 300 420" fill="none" aria-hidden="true">
+          <ellipse cx="150" cy="392" rx="95" ry="12" fill="#000" opacity=".45"/>
+          <g stroke="#2a2e3a" stroke-width="1"><path d="M20 392H280M55 392V60M105 392V60M155 392V60M205 392V60M255 392V60"/></g>
+          <!-- legs -->
+          <g id="fg-legL"><rect x="118" y="238" width="26" height="72" rx="12" fill="#2f6fde"/><rect x="120" y="308" width="22" height="66" rx="10" fill="#23262e"/><rect x="114" y="372" width="36" height="13" rx="5" fill="#ff5a1f"/></g>
+          <g id="fg-legR"><rect x="156" y="238" width="26" height="72" rx="12" fill="#2f6fde"/><rect x="158" y="308" width="22" height="66" rx="10" fill="#23262e"/><rect x="150" y="372" width="36" height="13" rx="5" fill="#ff5a1f"/></g>
+          <!-- torso -->
+          <rect x="108" y="196" width="84" height="48" rx="10" fill="#23262e"/>
+          <path d="M102 118 L198 118 L188 204 L112 204 Z" fill="#2f6fde"/>
+          <circle cx="150" cy="152" r="11" fill="#ff5a1f"/>
+          <!-- arms -->
+          <g id="fg-armL"><rect x="62" y="122" width="24" height="66" rx="11" fill="#2f6fde" transform="rotate(10 74 125)"/><rect x="52" y="182" width="20" height="58" rx="9" fill="#e8b48c" transform="rotate(6 62 185)"/><circle cx="58" cy="246" r="11" fill="#ff5a1f"/></g>
+          <g id="fg-armR"><rect x="214" y="122" width="24" height="66" rx="11" fill="#2f6fde" transform="rotate(-10 226 125)"/><rect x="228" y="182" width="20" height="58" rx="9" fill="#e8b48c" transform="rotate(-6 238 185)"/><circle cx="242" cy="246" r="11" fill="#ff5a1f"/></g>
+          <!-- head -->
+          <rect x="141" y="94" width="18" height="18" fill="#e8b48c"/>
+          <circle cx="150" cy="66" r="34" fill="#e8b48c"/>
+          <rect x="124" y="58" width="52" height="13" rx="4" fill="#ff5a1f"/>
+          <!-- joints -->
+          <g fill="#ff5a1f" stroke="#fff" stroke-width="2">
+            <circle class="jdot" data-j="neck" cx="150" cy="102" r="8"/><circle class="jdot" data-j="chest" cx="150" cy="196" r="8"/><circle class="jdot" data-j="waist" cx="150" cy="228" r="7"/>
+            <circle class="jdot" data-j="shL" cx="100" cy="126" r="8"/><circle class="jdot" data-j="shR" cx="200" cy="126" r="8"/>
+            <circle class="jdot" data-j="elL" cx="66" cy="188" r="7"/><circle class="jdot" data-j="elR" cx="234" cy="188" r="7"/>
+            <circle class="jdot" data-j="wrL" cx="60" cy="240" r="6"/><circle class="jdot" data-j="wrR" cx="240" cy="240" r="6"/>
+            <circle class="jdot" data-j="hipL" cx="130" cy="246" r="8"/><circle class="jdot" data-j="hipR" cx="170" cy="246" r="8"/>
+            <circle class="jdot" data-j="kneeL" cx="131" cy="310" r="7"/><circle class="jdot" data-j="kneeR" cx="169" cy="310" r="7"/>
+            <circle class="jdot" data-j="ankL" cx="131" cy="374" r="6"/><circle class="jdot" data-j="ankR" cx="169" cy="374" r="6"/>
+          </g>
+          <text x="150" y="412" text-anchor="middle" fill="#9aa1b0" font-size="11" font-family="monospace">2D PREVIEW — 3D LOADS ON LIVE SITE · CLICK AN ORANGE JOINT</text>
+        </svg>
+      </div>
+      <div class="view-hud">
+        <div class="hud-card">
+          <h4 id="hudTitle">Hero Blank — T-Pose</h4>
+          <p id="hudDesc">This is a JointLab-style workspace rebuilt for figures. Pick a joint sphere, change its type and clearance, then pose it. Clearance is what makes a printed joint snap, spin, or seize.</p>
+        </div>
+        <div class="hud-card hud-right">
+          <div>HEIGHT <b id="hudHeight" style="color:#fff">150.0 mm</b></div>
+          <div>SELECTED <b id="hudSel" style="color:#ffb020">— Neck</b></div>
+          <div>CLEARANCE <b id="hudClear" style="color:#5eead4">0.30 mm · Snap-fit</b></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- INSPECTOR -->
+  <aside class="inspector">
+    <div class="tabs">
+      <button class="on" onclick="switchTab(this,'figure')">Figure</button>
+      <button onclick="switchTab(this,'joints')">Joints</button>
+      <button onclick="switchTab(this,'pose')">Pose</button>
+      <button onclick="switchTab(this,'print')">Export</button>
+    </div>
+    <div class="panel-scroll">
+      <!-- FIGURE -->
+      <section id="tab-figure" class="tabpage on">
+        <div class="hero-strip">
+          <div style="width:52px;height:52px;border-radius:8px;background:#1a1d24;display:grid;place-items:center;font-size:28px">🦸</div>
+          <div><b style="font-size:15px">Start from a blank, not a sculpt</b><p style="margin:3px 0 0;font-size:12px;color:var(--muted);line-height:1.4">JointLab's core idea: place joints first, let the body follow. Templates set proportions + joint defaults together.</p></div>
+        </div>
+        <p class="label">Body template</p>
+        <div class="templates" id="templates"></div>
+        <p class="label">Scale & proportions</p>
+        <div class="scale-row" id="scaleRow">
+          <button onclick="quickScale(100,this)">1:18<br><small>100mm</small></button>
+          <button class="on" onclick="quickScale(150,this)">1:12<br><small>150mm</small></button>
+          <button onclick="quickScale(180,this)">1:10<br><small>180mm</small></button>
+          <button onclick="quickScale(300,this)">1:6<br><small>300mm</small></button>
+        </div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
+          <div><div class="range-row"><span>Head size</span><span class="range-val" id="v-head">1.00×</span></div><input type="range" min="70" max="160" value="100" oninput="propChange('head',this.value)"></div>
+          <div><div class="range-row"><span>Shoulder width</span><span class="range-val" id="v-shoulder">1.00×</span></div><input type="range" min="70" max="150" value="100" oninput="propChange('shoulder',this.value)"></div>
+          <div><div class="range-row"><span>Bulk / muscle</span><span class="range-val" id="v-bulk">1.00×</span></div><input type="range" min="60" max="160" value="100" oninput="propChange('bulk',this.value)"></div>
+        </div>
+        <p class="label">At a glance</p>
+        <div class="stat-grid">
+          <div class="stat"><b id="statHeight">150</b><span>mm tall</span></div>
+          <div class="stat"><b>16</b><span>joints</span></div>
+          <div class="stat"><b id="statScore">94</b><span>print score</span></div>
+        </div>
+        <p class="label">How JointLab does it — in this app</p>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5">
+          <div style="display:flex;gap:10px"><b style="color:var(--accent)">01 Joints</b><span>Position ball, hinge &amp; barbell joints and dial clearance.</span></div>
+          <div style="display:flex;gap:10px"><b style="color:var(--accent)">02 Separate</b><span>Use Exploded view to split into printable parts.</span></div>
+          <div style="display:flex;gap:10px"><b style="color:var(--accent)">03 Paint</b><span>Assign colors per part for AMS or hand-painting.</span></div>
+          <div style="display:flex;gap:10px"><b style="color:var(--accent)">04 Export</b><span>Download a real STL — assembled or split into printable parts.</span></div>
+        </div>
+      </section>
+
+      <!-- JOINTS -->
+      <section id="tab-joints" class="tabpage">
+        <p class="label">All joints — click to edit</p>
+        <div class="joint-list" id="jointList"></div>
+        <p class="label">Selected joint</p>
+        <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><b id="selName" style="font-size:16px">Neck</b><span class="badge ok" id="selBadge">Snap-fit</span></div>
+          <p style="margin:4px 0 0;font-size:12px;color:var(--muted)" id="selHint">Ball &amp; socket — best for heads. Wide range, hides well in a collar.</p>
+        </div>
+        <p class="label">Joint type</p>
+        <div class="type-grid" id="typeGrid"></div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:12px">
+          <div><div class="range-row"><span>Ball / pin diameter</span><span class="range-val" id="v-ball">5.0 mm</span></div><input type="range" id="r-ball" min="30" max="100" value="50" oninput="jointParam('ball',this.value)"></div>
+          <div><div class="range-row"><span>Clearance (gap)</span><span class="range-val" id="v-clear">0.30 mm</span></div><input type="range" id="r-clear" min="10" max="60" value="30" oninput="jointParam('clear',this.value)"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px"><span>0.10 seized</span><span>0.25–0.30 snap-fit</span><span>0.50 loose</span></div></div>
+          <div><div class="range-row"><span>Friction / tightness</span><span class="range-val" id="v-fric">65%</span></div><input type="range" id="r-fric" min="0" max="100" value="65" oninput="jointParam('fric',this.value)"></div>
+        </div>
+        <div class="clearance-viz" style="margin-top:12px">
+          <div class="socket" id="socketViz" style="width:72px;height:72px"><div class="ball" id="ballViz" style="width:44px;height:44px"></div></div>
+          <div><b id="vizTitle" style="font-size:13px">0.30 mm gap — snap-fit</b><p style="margin:3px 0 0;font-size:12px;color:var(--muted);line-height:1.45" id="vizText">For FDM PLA/PETG. Holds a pose, still pops apart for painting. This is the JointLab default for shoulders &amp; hips.</p></div>
+        </div>
+        <div class="notice" style="margin-top:10px"><b>Printer note:</b> Resin needs less clearance (0.15–0.20 mm). FDM needs more — your nozzle accuracy <i>is</i> the joint tolerance. When in doubt, print one test joint first.</div>
+      </section>
+
+      <!-- POSE -->
+      <section id="tab-pose" class="tabpage">
+        <p class="label">Pose presets</p>
+        <div class="pose-grid">
+          <button onclick="applyPose('tpose')">T-Pose <span>Calibration / rigging</span></button>
+          <button onclick="applyPose('apose')">A-Pose <span>Relaxed stance</span></button>
+          <button onclick="applyPose('hero')">Hero Landing <span>Kneeling, fist down</span></button>
+          <button onclick="applyPose('walk')">Walking <span>Mid-stride</span></button>
+          <button onclick="applyPose('sit')">Sitting <span>Tests hips + knees</span></button>
+          <button onclick="applyPose('reach')">Reach &amp; Aim <span>One arm forward</span></button>
+        </div>
+        <p class="label">Pose selected joint — <span id="poseJointName" style="color:var(--ink)">Neck</span></p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div><div class="range-row"><span>Bend (X)</span><span class="range-val" id="v-rx">0°</span></div><input type="range" min="-90" max="90" value="0" id="poseX" oninput="poseAxis('x',this.value)"></div>
+          <div><div class="range-row"><span>Twist (Y)</span><span class="range-val" id="v-ry">0°</span></div><input type="range" min="-90" max="90" value="0" id="poseY" oninput="poseAxis('y',this.value)"></div>
+          <div><div class="range-row"><span>Tilt (Z)</span><span class="range-val" id="v-rz">0°</span></div><input type="range" min="-90" max="90" value="0" id="poseZ" oninput="poseAxis('z',this.value)"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" style="flex:1" onclick="applyPose('tpose')">Reset pose</button><button class="btn" style="flex:1" onclick="randomPose()">Random pose</button></div>
+        <p class="label">Range-of-motion check</p>
+        <div id="romList" style="display:flex;flex-direction:column;gap:6px;font-size:13px"></div>
+      </section>
+
+      <!-- PRINT -->
+      <section id="tab-print" class="tabpage">
+        <p class="label">Material &amp; printer</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <select id="matSel" onchange="updatePrintScore()" style="padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink)"><option>PLA — FDM</option><option>PETG — FDM</option><option>ABS — FDM</option><option>Resin — SLA</option><option>TPU — Flexible</option></select>
+          <select id="printerSel" onchange="updatePrintScore()" style="padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink)"><option>0.4 mm nozzle</option><option>0.2 mm nozzle</option><option>Resin printer</option></select>
+        </div>
+        <p class="label">Paint — color per region</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div><div style="font-size:13px;margin-bottom:6px">Body / suit</div><div class="swatches" data-region="body"></div></div>
+          <div><div style="font-size:13px;margin-bottom:6px">Accent / armor</div><div class="swatches" data-region="accent"></div></div>
+          <div><div style="font-size:13px;margin-bottom:6px">Head / skin</div><div class="swatches" data-region="skin"></div></div>
+        </div>
+        <p class="label">STL export — printable mesh</p>
+        <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-primary" onclick="downloadSTL('assembled')">Download STL — Assembled figure ↓</button>
+            <button class="btn" onclick="downloadSTL('parts')">Download STL — 17 parts, laid out ↓</button>
+          </div>
+          <label style="display:flex;gap:7px;align-items:center;font-size:13px;margin-top:10px;cursor:pointer"><input type="checkbox" id="stlBalls" checked style="accent-color:var(--accent)"> Include joint balls &amp; socket collars</label>
+          <p id="stlMeta" style="font-size:12px;color:var(--muted);line-height:1.5;margin:8px 0 0">Binary STL, millimetres, Z-up. Assembled uses your current pose, template and scale. Parts layout separates all 17 parts on one plate; socket bores are sized ball + 2× clearance from the Joints tab.</p>
+        </div>
+        <p class="label">Parts list — 17 parts</p>
+        <div style="overflow:auto;border:1px solid var(--line);border-radius:9px"><table><thead><tr><th>Part</th><th>Joint</th><th>Size</th><th>Status</th></tr></thead><tbody id="partsBody"></tbody></table></div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn" style="flex:1" onclick="downloadPlan()">Plan JSON</button>
+          <button class="btn" style="flex:1" onclick="downloadCSV()">Parts CSV</button>
+        </div>
+      </section>
+    </div>
+  </aside>
+</div>
+
+<footer class="statusbar"><span>Mode: <b id="statusMode" style="color:var(--ink)">Pose</b></span><span>Selection: Face</span><span>Cursor 3D: X 0.00 · Y 0.00 · Z 0.00 mm</span><span style="margin-left:auto">G/R/S transform · Ctrl snap · Esc cancel — Blender-style, like JointLab</span></footer>
+
+<script>
+// ---------- Data ----------
+const JOINT_TYPES={
+  ball:{label:'Ball & Socket',hint:'Best for head, shoulders, hips. Wide range, hides well.'},
+  hinge:{label:'Hinge',hint:'One axis only. Clean, strong — elbows & knees if you want a toy-like look.'},
+  double:{label:'Double Hinge',hint:'Two hinges = double the bend. The modern elbow/knee standard.'},
+  swivel:{label:'Swivel',hint:'Pure rotation. Waist, biceps, thighs — preserves the sculpt.'},
+  barbell:{label:'Barbell',hint:'Ball on both ends of a peg. Best torso joint — great range, easy to pop apart.'},
+  ballhinge:{label:'Ball Hinge',hint:'Ball + hinge combo. The neck & ankle favourite for expressive tilt.'},
+};
+let joints=[
+ {id:'neck',name:'Neck',type:'ballhinge',ball:5.0,clear:0.25,fric:60},
+ {id:'chest',name:'Chest / Diaphragm',type:'barbell',ball:6.0,clear:0.30,fric:65},
+ {id:'waist',name:'Waist',type:'swivel',ball:5.5,clear:0.30,fric:55},
+ {id:'shL',name:'Shoulder — L',type:'ball',ball:6.0,clear:0.30,fric:70},
+ {id:'shR',name:'Shoulder — R',type:'ball',ball:6.0,clear:0.30,fric:70},
+ {id:'elL',name:'Elbow — L',type:'double',ball:4.5,clear:0.28,fric:65},
+ {id:'elR',name:'Elbow — R',type:'double',ball:4.5,clear:0.28,fric:65},
+ {id:'wrL',name:'Wrist — L',type:'ballhinge',ball:3.5,clear:0.25,fric:50},
+ {id:'wrR',name:'Wrist — R',type:'ballhinge',ball:3.5,clear:0.25,fric:50},
+ {id:'hipL',name:'Hip — L',type:'ball',ball:6.5,clear:0.32,fric:72},
+ {id:'hipR',name:'Hip — R',type:'ball',ball:6.5,clear:0.32,fric:72},
+ {id:'kneeL',name:'Knee — L',type:'double',ball:5.0,clear:0.28,fric:68},
+ {id:'kneeR',name:'Knee — R',type:'double',ball:5.0,clear:0.28,fric:68},
+ {id:'ankL',name:'Ankle — L',type:'ballhinge',ball:4.0,clear:0.26,fric:58},
+ {id:'ankR',name:'Ankle — R',type:'ballhinge',ball:4.0,clear:0.26,fric:58},
+ {id:'toe',name:'Toe / Foot',type:'hinge',ball:3.0,clear:0.24,fric:45},
+];
+let selectedJoint=joints[0];
+let currentScale=150, currentTemplate='hero';
+const templates=[
+ {id:'hero',name:'Hero Blank',desc:'Classic 1:12 proportions, broad shoulders',head:1,shoulder:1.15,bulk:1.1},
+ {id:'slim',name:'Slim / Anime',desc:'Longer limbs, smaller head joint',head:0.9,shoulder:0.9,bulk:0.8},
+ {id:'bulk',name:'Bulk / Mech',desc:'Heavy armor-ready, oversized balls',head:0.95,shoulder:1.35,bulk:1.45},
+ {id:'chibi',name:'Chibi',desc:'Big head, short limbs, cute proportions',head:1.55,shoulder:0.85,bulk:0.9},
+ {id:'skeleton',name:'Skeleton',desc:'Thin blank for custom sculpting over it',head:1,shoulder:0.95,bulk:0.62},
+ {id:'kid',name:'Kid Hero',desc:'Shorter torso, younger proportions',head:1.2,shoulder:0.9,bulk:0.85},
+];
+// templates UI
+const tWrap=document.getElementById('templates');
+templates.forEach(t=>{const b=document.createElement('button');b.className='temp'+(t.id==='hero'?' on':'');b.innerHTML=`<b>${t.name}</b><span>${t.desc}</span>`;b.onclick=()=>{document.querySelectorAll('.temp').forEach(x=>x.classList.remove('on'));b.classList.add('on');applyTemplate(t)};tWrap.appendChild(b)});
+
+// ---------- Three.js figure ----------
+let scene,camera,renderer,controls,figure={},jointMeshes={},partMeshes=[],mats={},wire=false;
+const wrap=document.getElementById('canvasWrap');
+function mat(color,rough=0.65){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:0.08})}
+function initThree(){
+  scene=new THREE.Scene(); scene.background=new THREE.Color(0x101216); scene.fog=new THREE.Fog(0x101216,18,32);
+  camera=new THREE.PerspectiveCamera(42,1,0.1,100); camera.position.set(3.2,2.2,5.2);
+  renderer=new THREE.WebGLRenderer({canvas:document.getElementById('scene'),antialias:true});
+  controls=new THREE.OrbitControls(camera,renderer.domElement); controls.target.set(0,1.45,0); controls.enableDamping=true;
+  scene.add(new THREE.AmbientLight(0xffffff,0.55));
+  const key=new THREE.DirectionalLight(0xffffff,0.95); key.position.set(4,6,4); scene.add(key);
+  const rim=new THREE.DirectionalLight(0xff5a1f,0.35); rim.position.set(-4,3,-4); scene.add(rim);
+  const grid=new THREE.GridHelper(10,20,0x2a2e3a,0x1e2129); scene.add(grid);
+  const ground=new THREE.Mesh(new THREE.CircleGeometry(1.1,40),new THREE.MeshStandardMaterial({color:0x1a1c22,roughness:1})); ground.rotation.x=-Math.PI/2; ground.position.y=0.001; scene.add(ground);
+  mats.body=mat(0x2f6fde); mats.accent=mat(0xff5a1f); mats.skin=mat(0xe8b48c); mats.dark=mat(0x23262e,0.8);
+  buildFigure(); resize(); animate();
+  renderer.domElement.addEventListener('pointerdown',onPick);
+}
+function box(w,h,d,m){const ms=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); ms.userData.baseScale=new THREE.Vector3(1,1,1); partMeshes.push(ms); return ms}
+function cyl(rt,rb,h,m){const ms=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,20),m); partMeshes.push(ms); return ms}
+function sph(r,m){const ms=new THREE.Mesh(new THREE.SphereGeometry(r,24,18),m); return ms}
+function group(x,y,z,parent){const g=new THREE.Group(); g.position.set(x,y,z); g.userData.home=new THREE.Vector3(x,y,z); parent.add(g); return g}
+function buildFigure(){
+  const root=new THREE.Group(); scene.add(root); figure.root=root;
+  // pelvis
+  const pelvisG=group(0,1.48,0,root); figure.pelvis=pelvisG;
+  const pelvis=box(0.52,0.28,0.32,mats.dark); pelvisG.add(pelvis); figure.pelvisMesh=pelvis;
+  // waist -> torso
+  const waistG=group(0,0.14,0,pelvisG); figure.waist=waistG; addJointSphere(waistG,'waist');
+  const torsoLow=box(0.5,0.28,0.3,mats.body); torsoLow.position.y=0.14; waistG.add(torsoLow);
+  const chestG=group(0,0.30,0,waistG); figure.chest=chestG; addJointSphere(chestG,'chest');
+  const chest=box(0.62,0.52,0.34,mats.body); chest.position.y=0.26; chestG.add(chest); figure.chestMesh=chest;
+  const emblem=sph(0.09,mats.accent); emblem.position.set(0,0.30,0.19); emblem.scale.z=0.4; chestG.add(emblem);
+  // neck/head
+  const neckG=group(0,0.56,0,chestG); figure.neck=neckG; addJointSphere(neckG,'neck');
+  const neck=cyl(0.09,0.11,0.14,mats.skin); neck.position.y=0.05; neckG.add(neck);
+  const headG=group(0,0.12,0,neckG); figure.head=headG;
+  const head=sph(0.21,mats.skin); head.position.y=0.20; head.scale.y=1.15; headG.add(head); figure.headMesh=head;
+  const mask=box(0.34,0.13,0.05,mats.accent); mask.position.set(0,0.24,0.17); headG.add(mask);
+  // arms
+  function arm(side){ // side -1 L, +1 R visually mirrored naming kept simple
+    const sh=group(side*0.38,0.48,0,chestG); addJointSphere(sh, side<0?'shL':'shR');
+    const up=cyl(0.09,0.085,0.42,mats.body); up.position.y=-0.21; sh.add(up);
+    const el=group(0,-0.44,0,sh); addJointSphere(el, side<0?'elL':'elR');
+    const fo=cyl(0.075,0.07,0.38,mats.skin); fo.position.y=-0.19; el.add(fo);
+    const glove=sph(0.10,mats.accent); glove.position.y=-0.38; el.add(glove);
+    const wr=group(0,-0.40,0,el); addJointSphere(wr, side<0?'wrL':'wrR');
+    const hand=box(0.13,0.16,0.06,mats.accent); hand.position.y=-0.10; wr.add(hand);
+    sh.rotation.z=side*0.12; return {sh,el,wr};
+  }
+  const aL=arm(-1), aR=arm(1); figure.shL=aL.sh; figure.elL=aL.el; figure.wrL=aL.wr; figure.shR=aR.sh; figure.elR=aR.el; figure.wrR=aR.wr;
+  // legs
+  function leg(side){
+    const hip=group(side*0.16,-0.10,0,pelvisG); addJointSphere(hip, side<0?'hipL':'hipR');
+    const th=cyl(0.11,0.095,0.48,mats.body); th.position.y=-0.24; hip.add(th);
+    const knee=group(0,-0.50,0,hip); addJointSphere(knee, side<0?'kneeL':'kneeR');
+    const shin=cyl(0.085,0.075,0.46,mats.dark); shin.position.y=-0.23; knee.add(shin);
+    const ank=group(0,-0.48,0,knee); addJointSphere(ank, side<0?'ankL':'ankR');
+    const foot=box(0.14,0.09,0.30,mats.accent); foot.position.set(0,-0.06,0.07); ank.add(foot);
+    return {hip,knee,ank};
+  }
+  const lL=leg(-1), lR=leg(1); figure.hipL=lL.hip; figure.kneeL=lL.knee; figure.ankL=lL.ank; figure.hipR=lR.hip; figure.kneeR=lR.knee; figure.ankR=lR.ank;
+  // store pose state
+  figure.pose={}; Object.keys(figure).forEach(k=>{if(figure[k]&&figure[k].isGroup) figure.pose[k]={x:figure[k].rotation.x,y:figure[k].rotation.y,z:figure[k].rotation.z}});
+}
+function addJointSphere(parent,id){
+  const s=sph(0.055, new THREE.MeshStandardMaterial({color:0xff5a1f,emissive:0x903000,roughness:0.35}));
+  s.userData.jointId=id; parent.add(s); jointMeshes[id]=s;
+}
+function resize(){if(!renderer)return; const w=wrap.clientWidth,h=wrap.clientHeight; if(!w||!h)return; renderer.setSize(w,h,false); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); camera.aspect=w/h; camera.updateProjectionMatrix()}
+window.addEventListener('resize',resize);
+function animate(){requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera)}
+function mkStub(){return {isGroup:true,rotation:{x:0,y:0,z:0,set:function(a,b,c){this.x=a||0;this.y=b||0;this.z=c||0}},position:{x:0,y:0,z:0,set:function(){}},scale:{x:1,y:1,z:1,set:function(){},setScalar:function(){}},userData:{home:{x:0,y:0,z:0}}}}
+function initFallback(){
+  document.getElementById('fallback').classList.add('on');
+  ['root','pelvis','waist','chest','neck','head','shL','elL','wrL','shR','elR','wrR','hipL','kneeL','ankL','hipR','kneeR','ankR'].forEach(k=>figure[k]=mkStub());
+  figure.headMesh=mkStub(); figure.chestMesh=mkStub(); figure.pelvisMesh=mkStub();
+  mats.body={color:{setHex:function(){}},wireframe:false}; mats.accent={color:{setHex:function(){}},wireframe:false}; mats.skin={color:{setHex:function(){}},wireframe:false}; mats.dark={color:{setHex:function(){}},wireframe:false};
+  document.querySelectorAll('#fallback .jdot').forEach(d=>{d.addEventListener('click',()=>{const j=joints.find(x=>x.id===d.dataset.j); if(j){selectJoint(j); switchTabByName('joints')}})});
+}
+function onPick(e){
+  const rect=renderer.domElement.getBoundingClientRect(); const m=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1, -((e.clientY-rect.top)/rect.height)*2+1);
+  const ray=new THREE.Raycaster(); ray.setFromCamera(m,camera);
+  const hits=ray.intersectObjects(Object.values(jointMeshes));
+  if(hits.length){const id=hits[0].object.userData.jointId; const j=joints.find(x=>x.id===id); if(j) selectJoint(j)}
+}
+if(typeof THREE!=='undefined' && THREE.OrbitControls){ try{ initThree(); }catch(err){ initFallback(); } } else { initFallback(); }
+
+// ---------- Joint UI ----------
+const jointList=document.getElementById('jointList');
+function renderJointList(){
+  jointList.innerHTML='';
+  joints.forEach(j=>{
+    const b=document.createElement('button'); b.className='joint-item'+(j===selectedJoint?' on':'');
+    b.innerHTML=`<span class="dot" style="background:${clearColor(j.clear)}"></span><span><b>${j.name}</b><span>${JOINT_TYPES[j.type].label}</span></span><em>⌀${j.ball.toFixed(1)} · ${j.clear.toFixed(2)}</em>`;
+    b.onclick=()=>selectJoint(j); jointList.appendChild(b);
+  }); renderROM();
+}
+function clearColor(c){return c<0.18?'#ff4757':c<=0.35?'#22c5a0':'#ffb020'}
+function clearLabel(c){return c<0.18?['Too tight','Seized risk']:c<=0.35?['Snap-fit','Snap-fit']:c<=0.45?['Free spin','Loose fit']:['Very loose','Loose']}
+function selectJoint(j){
+  selectedJoint=j;
+  document.getElementById('selName').textContent=j.name;
+  document.getElementById('selHint').textContent=JOINT_TYPES[j.type].hint;
+  document.getElementById('poseJointName').textContent=j.name;
+  document.getElementById('hudSel').textContent='— '+j.name;
+  document.getElementById('r-ball').value=j.ball*10; document.getElementById('r-clear').value=j.clear*100; document.getElementById('r-fric').value=j.fric;
+  document.querySelectorAll('#typeGrid button').forEach(b=>b.classList.toggle('on',b.dataset.t===j.type));
+  Object.values(jointMeshes).forEach(m=>{m.scale.setScalar(1); m.material.emissive.setHex(0x903000)});
+  if(jointMeshes[j.id]){jointMeshes[j.id].scale.setScalar(1.7); jointMeshes[j.id].material.emissive.setHex(0xff5a1f)}
+  updateJointViz(); syncPoseSliders(); renderJointList();
+}
+const tg=document.getElementById('typeGrid');
+Object.entries(JOINT_TYPES).forEach(([k,v])=>{const b=document.createElement('button'); b.dataset.t=k; b.textContent=v.label; b.onclick=()=>{selectedJoint.type=k; selectJoint(selectedJoint)}; tg.appendChild(b)});
+function jointParam(kind,val){
+  if(kind==='ball'){selectedJoint.ball=val/10; document.getElementById('v-ball').textContent=selectedJoint.ball.toFixed(1)+' mm'}
+  if(kind==='clear'){selectedJoint.clear=val/100; document.getElementById('v-clear').textContent=selectedJoint.clear.toFixed(2)+' mm'}
+  if(kind==='fric'){selectedJoint.fric=+val; document.getElementById('v-fric').textContent=val+'%'}
+  updateJointViz(); renderJointList(); updatePrintScore();
+}
+function updateJointViz(){
+  const j=selectedJoint, [lab,badge]=clearLabel(j.clear);
+  document.getElementById('v-ball').textContent=j.ball.toFixed(1)+' mm';
+  document.getElementById('v-clear').textContent=j.clear.toFixed(2)+' mm';
+  document.getElementById('v-fric').textContent=j.fric+'%';
+  document.getElementById('selBadge').textContent=badge; document.getElementById('selBadge').className='badge '+(j.clear<0.18?'bad':j.clear<=0.35?'ok':'warn');
+  document.getElementById('vizTitle').textContent=`${j.clear.toFixed(2)} mm gap — ${lab.toLowerCase()}`;
+  document.getElementById('vizText').textContent= j.clear<0.18?'Too tight for FDM — will fuse or crack on insertion. Increase to at least 0.20 mm.': j.clear<=0.35?'For FDM PLA/PETG. Holds a pose, still pops apart for painting. JointLab default for shoulders & hips.':'Free movement, less pose-holding. Good for waists and spinning parts — add friction or a ratchet if it must hold.';
+  document.getElementById('ballViz').style.width=(28+j.ball*3)+'px'; document.getElementById('ballViz').style.height=(28+j.ball*3)+'px';
+  document.getElementById('socketViz').style.width=(52+j.clear*70)+'px'; document.getElementById('socketViz').style.height=(52+j.clear*70)+'px';
+  document.getElementById('hudClear').textContent=`${j.clear.toFixed(2)} mm · ${badge}`;
+  if(jointMeshes[j.id]) jointMeshes[j.id].scale.setScalar(1.4 + j.ball/8);
+}
+function renderROM(){
+  const el=document.getElementById('romList'); if(!el) return; el.innerHTML=joints.slice(0,6).map(j=>`<div style="display:flex;justify-content:space-between"><span>${j.name}</span><b style="color:${clearColor(j.clear)}">${JOINT_TYPES[j.type].label}</b></div>`).join('')+'<p style="font-size:12px;color:var(--muted);margin:4px 0">Double hinges bend ~135°, balls ~90° in all directions, barbells ~60° with twist. If a pose clips the torso, widen the socket — don\'t shrink the ball.</p>';
+}
+// pose
+const poseMap={neck:'neck',chest:'chest',waist:'waist',shL:'shL',shR:'shR',elL:'elL',elR:'elR',wrL:'wrL',wrR:'wrR',hipL:'hipL',hipR:'hipR',kneeL:'kneeL',kneeR:'kneeR',ankL:'ankL',ankR:'ankR'};
+function syncPoseSliders(){const g=figure[poseMap[selectedJoint.id]]; if(!g)return; const d=r=>Math.round(r*180/Math.PI); document.getElementById('poseX').value=d(g.rotation.x); document.getElementById('poseY').value=d(g.rotation.y); document.getElementById('poseZ').value=d(g.rotation.z); document.getElementById('v-rx').textContent=d(g.rotation.x)+'°'; document.getElementById('v-ry').textContent=d(g.rotation.y)+'°'; document.getElementById('v-rz').textContent=d(g.rotation.z)+'°'}
+function poseAxis(axis,val){const g=figure[poseMap[selectedJoint.id]]; if(!g)return; g.rotation[axis]=val*Math.PI/180; document.getElementById('v-r'+axis).textContent=val+'°'}
+function setRot(id,x,y,z){const g=figure[id]; if(g) g.rotation.set(x*Math.PI/180,y*Math.PI/180,z*Math.PI/180)}
+function applyPose(name){
+  // reset
+  ['neck','chest','waist','shL','shR','elL','elR','wrL','wrR','hipL','hipR','kneeL','kneeR','ankL','ankR'].forEach(k=>setRot(k,0,0,k==='shL'?-7:k==='shR'?7:0));
+  figure.root.position.y=0; figure.root.rotation.set(0,0,0);
+  if(name==='apose'){setRot('shL',0,0,-28); setRot('shR',0,0,28); setRot('elL',-8,0,0); setRot('elR',-8,0,0)}
+  if(name==='hero'){setRot('hipL',-95,0,-6); setRot('kneeL',90,0,0); setRot('hipR',18,0,6); setRot('kneeR',12,0,0); setRot('shL',-55,0,-25); setRot('shR',28,0,42); setRot('elR',-70,0,0); setRot('chest',12,0,0); setRot('neck',-14,18,0); figure.root.position.y=-0.32}
+  if(name==='walk'){setRot('hipL',-32,0,0); setRot('kneeL',18,0,0); setRot('hipR',28,0,0); setRot('kneeR',42,0,0); setRot('shL',26,0,-10); setRot('shR',-26,0,10); setRot('elL',-22,0,0); setRot('elR',-18,0,0)}
+  if(name==='sit'){setRot('hipL',-88,0,-4); setRot('hipR',-88,0,4); setRot('kneeL',88,0,0); setRot('kneeR',88,0,0); setRot('ankL',-6,0,0); setRot('ankR',-6,0,0); figure.root.position.y=-0.55}
+  if(name==='reach'){setRot('shR',-88,0,8); setRot('elR',-6,0,0); setRot('shL',10,0,-18); setRot('elL',-38,0,0); setRot('neck',0,-22,0); setRot('waist',0,-14,0)}
+  document.getElementById('hudTitle').textContent=document.querySelector('.temp.on b')?.textContent+' — '+name.replace('tpose','T-Pose').replace('apose','A-Pose');
+  syncPoseSliders();
+}
+function randomPose(){['shL','shR','elL','elR','hipL','hipR','kneeL','kneeR','neck','waist'].forEach(k=>setRot(k,(Math.random()*50-25)|0,(Math.random()*30-15)|0,(Math.random()*40-20)|0)); syncPoseSliders()}
+// figure / scale / props
+function applyTemplate(t){currentTemplate=t.id; propChange('head',t.head*100,true); propChange('shoulder',t.shoulder*100,true); propChange('bulk',t.bulk*100,true); if(t.id==='bulk'){joints.forEach(j=>j.ball=Math.min(10,j.ball*1.2))} document.getElementById('hudTitle').textContent=t.name+' — T-Pose'; selectJoint(selectedJoint)}
+function propChange(kind,val,quiet){const f=val/100; if(kind==='head'){figure.headMesh.scale.set(f,1.15*f,f); document.getElementById('v-head').textContent=f.toFixed(2)+'×'} if(kind==='shoulder'){figure.chestMesh.scale.x=f; figure.shL.position.x=-0.38*f; figure.shR.position.x=0.38*f; document.getElementById('v-shoulder').textContent=f.toFixed(2)+'×'} if(kind==='bulk'){partMeshes.forEach(m=>{if(m.geometry.type==='CylinderGeometry'||m.geometry.type==='BoxGeometry') m.scale.x=m.scale.z=f}); document.getElementById('v-bulk').textContent=f.toFixed(2)+'×'}}
+function setScale(mm){currentScale=+mm; const s=mm/150; figure.root.scale.setScalar(s*0.95); document.getElementById('hudHeight').textContent=(+mm).toFixed(1)+' mm'; document.getElementById('statHeight').textContent=mm; document.getElementById('scaleSel').value=String(mm); renderParts(); updatePrintScore()}
+function quickScale(mm,btn){document.querySelectorAll('#scaleRow button').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); setScale(mm)}
+function setExploded(v){document.getElementById('expVal').textContent=v+'%'; const f=v/100; const off={chest:0.25,neck:0.5,head:0.7}; // simple: lift chest/head, spread arms/legs via home positions
+  figure.chest.position.y=figure.chest.userData.home.y+f*0.28; figure.neck.position.y=figure.neck.userData.home.y+f*0.22; figure.head.position.y=figure.head.userData.home.y+f*0.18;
+  figure.shL.position.x=figure.shL.userData.home.x-f*0.22; figure.shR.position.x=figure.shR.userData.home.x+f*0.22;
+  figure.hipL.position.x=figure.hipL.userData.home.x-f*0.12; figure.hipR.position.x=figure.hipR.userData.home.x+f*0.12;
+}
+// tools / views / tabs
+function setTool(btn,tool){document.querySelectorAll('.rail button').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.getElementById('statusMode').textContent=tool[0].toUpperCase()+tool.slice(1); if(tool==='joint') switchTabByName('joints'); if(tool==='pose') switchTabByName('pose'); if(tool==='paint'||tool==='split') switchTabByName('print'); if(tool==='select') switchTabByName('figure')}
+function switchTab(btn,name){document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); document.querySelectorAll('.tabpage').forEach(p=>p.classList.remove('on')); document.getElementById('tab-'+name).classList.add('on')}
+function switchTabByName(name){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.textContent.toLowerCase().includes(name.slice(0,4)))); document.querySelectorAll('.tabpage').forEach(p=>p.classList.remove('on')); document.getElementById('tab-'+name).classList.add('on')}
+document.querySelectorAll('.top-nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.top-nav button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.getElementById('statusMode').textContent=b.textContent; if(b.dataset.mode==='joint')switchTabByName('joints'); if(b.dataset.mode==='print')switchTabByName('print'); if(b.dataset.mode==='pose')switchTabByName('pose')});
+function setView(btn,view){document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); if(!camera||!controls)return; if(view==='front')camera.position.set(0,1.5,5.4); if(view==='side')camera.position.set(5.4,1.5,0); if(view==='top')camera.position.set(0,6,0.01); if(view==='orbit')camera.position.set(3.2,2.2,5.2); controls.target.set(0,1.45,0)}
+function toggleJoints(on){Object.values(jointMeshes).forEach(m=>m.visible=on)}
+function toggleWireframe(){wire=!wire; Object.values(mats).forEach(m=>m.wireframe=wire)}
+function resetAll(){applyPose('tpose'); setExploded(0); document.querySelector('input[oninput^="setExploded"]').value=0; setScale(150)}
+// paint
+const palettes={body:[0x2f6fde,0x111827,0xb91c1c,0x15803d,0x7c3aed,0xeab308,0xf8fafc,0x0f766e],accent:[0xff5a1f,0xfacc15,0x111827,0xf8fafc,0xdc2626,0x2563eb,0x94a3b8,0x78350f],skin:[0xe8b48c,0xc68642,0x8d5524,0xf1c27d,0xffdbac,0x6b7280,0x22c55e,0x94a3b8]};
+Object.entries(palettes).forEach(([region,colors])=>{const wrapEl=document.querySelector(`.swatches[data-region="${region}"]`); colors.forEach((c,i)=>{const b=document.createElement('button'); b.className='swatch'+(i===0?' on':''); b.style.background='#'+c.toString(16).padStart(6,'0'); b.onclick=()=>{wrapEl.querySelectorAll('.swatch').forEach(x=>x.classList.remove('on')); b.classList.add('on'); mats[region].color.setHex(c)}; wrapEl.appendChild(b)})});
+// parts
+const partsData=[['Head','Ball Hinge','42 mm'],['Torso — Upper','Barbell','54 mm'],['Torso — Lower','Swivel','38 mm'],['Pelvis','—','30 mm'],['Upper Arm ×2','Ball','44 mm'],['Forearm ×2','Double Hinge','40 mm'],['Hand ×2','Ball Hinge','18 mm'],['Thigh ×2','Ball','50 mm'],['Shin ×2','Double Hinge','48 mm'],['Foot ×2','Ball Hinge','30 mm']];
+function renderParts(){const tb=document.getElementById('partsBody'); const f=currentScale/150; tb.innerHTML=partsData.map(p=>{const size=Math.round(parseInt(p[2])*f); const j=joints.find(x=>p[1].toLowerCase().includes(x.type))||joints[0]; const ok=j.clear>=0.18&&j.clear<=0.45; return `<tr><td><b>${p[0]}</b></td><td>${p[1]}</td><td>${size} mm</td><td><span class="badge ${ok?'ok':'warn'}">${ok?'Ready':'Check'}</span></td></tr>`}).join('')}
+function updatePrintScore(){const bad=joints.filter(j=>j.clear<0.18||j.clear>0.5).length; const score=Math.max(62,98-bad*9); document.getElementById('statScore').textContent=score; document.getElementById('polyCount').textContent=(4820+joints.length*40).toLocaleString(); renderParts()}
+function downloadBlob(name,content,type='text/plain'){const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+function downloadPlan(){const plan={figure:templates.find(t=>t.id===currentTemplate)?.name||'Hero Blank',scale_mm:currentScale,material:document.getElementById('matSel').value,joints:joints.map(j=>({name:j.name,type:JOINT_TYPES[j.type].label,ball_mm:j.ball,clearance_mm:j.clear,friction_pct:j.fric})),exported:new Date().toISOString(),note:'FigureLab print plan — modeled after JointLab 3D articulation workflow. Print one test joint before a full plate.'}; downloadBlob('figurelab-print-plan.json',JSON.stringify(plan,null,2),'application/json')}
+function downloadCSV(){const rows=[['Part','Joint','Ball mm','Clearance mm'],...joints.map(j=>[j.name,JOINT_TYPES[j.type].label,j.ball,j.clear])]; downloadBlob('figurelab-parts.csv',rows.map(r=>r.join(',')).join('\n'),'text/csv')}
+// ---------- Real STL export (binary, millimetres, Z-up) ----------
+function triN(a,b,c){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;return [nx/l,ny/l,nz/l]}
+function pushTri(t,a,b,c){if(a&&b&&c)t.push([a,b,c])}
+function sphT(t,cx,cy,cz,r,sy=1,ws=20,hs=14){for(let i=0;i<ws;i++){const a1=i/ws*Math.PI*2,a2=(i+1)/ws*Math.PI*2;for(let j=0;j<hs;j++){const p1=j/hs*Math.PI,p2=(j+1)/hs*Math.PI;const P=(a,p)=>[cx+r*Math.sin(p)*Math.cos(a),cy+r*Math.cos(p)*sy,cz+r*Math.sin(p)*Math.sin(a)];const q1=P(a1,p1),q2=P(a2,p1),q3=P(a2,p2),q4=P(a1,p2);pushTri(t,q1,q2,q3);pushTri(t,q1,q3,q4)}}}
+function boxT(t,cx,cy,cz,w,h,d){const x0=cx-w/2,x1=cx+w/2,y0=cy-h/2,y1=cy+h/2,z0=cz-d/2,z1=cz+d/2;const F=(a,b,c,d2)=>{pushTri(t,a,b,c);pushTri(t,a,c,d2)};F([x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]);F([x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0]);F([x1,y0,z1],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1]);F([x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0]);F([x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0]);F([x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1])}
+function cylT(t,cx,cy,cz,r,h,seg=20,rt=null){const rb=r,ra=(rt===null?r:rt),y0=cy-h/2,y1=cy+h/2;for(let i=0;i<seg;i++){const a1=i/seg*Math.PI*2,a2=(i+1)/seg*Math.PI*2,c1=Math.cos(a1),s1=Math.sin(a1),c2=Math.cos(a2),s2=Math.sin(a2);pushTri(t,[cx+rb*c1,y0,cz+rb*s1],[cx+rb*c2,y0,cz+rb*s2],[cx+ra*c2,y1,cz+ra*s2]);pushTri(t,[cx+rb*c1,y0,cz+rb*s1],[cx+ra*c2,y1,cz+ra*s2],[cx+ra*c1,y1,cz+ra*s1]);pushTri(t,[cx,y0,cz],[cx+rb*c2,y0,cz+rb*s2],[cx+rb*c1,y0,cz+rb*s1]);pushTri(t,[cx,y1,cz],[cx+ra*c1,y1,cz+ra*s1],[cx+ra*c2,y1,cz+ra*s2])}}
+function tubeT(t,cx,cy,cz,rO,rI,h,seg=22){const y0=cy-h/2,y1=cy+h/2;for(let i=0;i<seg;i++){const a1=i/seg*Math.PI*2,a2=(i+1)/seg*Math.PI*2,c1=Math.cos(a1),s1=Math.sin(a1),c2=Math.cos(a2),s2=Math.sin(a2);pushTri(t,[cx+rO*c1,y0,cz+rO*s1],[cx+rO*c2,y0,cz+rO*s2],[cx+rO*c2,y1,cz+rO*s2]);pushTri(t,[cx+rO*c1,y0,cz+rO*s1],[cx+rO*c2,y1,cz+rO*s2],[cx+rO*c1,y1,cz+rO*s1]);pushTri(t,[cx+rI*c1,y0,cz+rI*s1],[cx+rI*c2,y1,cz+rI*s2],[cx+rI*c2,y0,cz+rI*s2]);pushTri(t,[cx+rI*c1,y0,cz+rI*s1],[cx+rI*c1,y1,cz+rI*s1],[cx+rI*c2,y1,cz+rI*s2]);pushTri(t,[cx+rO*c1,y1,cz+rO*s1],[cx+rO*c2,y1,cz+rO*s2],[cx+rI*c2,y1,cz+rI*s2]);pushTri(t,[cx+rO*c1,y1,cz+rO*s1],[cx+rI*c2,y1,cz+rI*s2],[cx+rI*c1,y1,cz+rI*s1]);pushTri(t,[cx+rO*c1,y0,cz+rO*s1],[cx+rI*c2,y0,cz+rI*s2],[cx+rO*c2,y0,cz+rO*s2]);pushTri(t,[cx+rO*c1,y0,cz+rO*s1],[cx+rI*c1,y0,cz+rI*s1],[cx+rI*c2,y0,cz+rI*s2])}}
+function stlBlob(tris){const buf=new ArrayBuffer(84+tris.length*50),dv=new DataView(buf);dv.setUint32(80,tris.length,true);let o=84;tris.forEach(tr=>{const n=triN(tr[0],tr[1],tr[2]);[n,tr[0],tr[1],tr[2]].forEach(p=>{dv.setFloat32(o,p[0],true);dv.setFloat32(o+4,p[1],true);dv.setFloat32(o+8,p[2],true);o+=12});dv.setUint16(o,0,true);o+=2});return new Blob([buf],{type:'application/octet-stream'})}
+function yUpToSTL(raw){let minY=1e9,cx=0,cz=0,n=0;raw.forEach(tr=>tr.forEach(v=>{if(v[1]<minY)minY=v[1]}));const seen={};raw.forEach(tr=>tr.forEach(v=>{const k=v[0].toFixed(3)+','+v[2].toFixed(3);if(!seen[k]){seen[k]=1;cx+=v[0];cz+=v[2];n++}}));cx/=n||1;cz/=n||1;return raw.map(tr=>tr.map(v=>[v[0]-cx,-(v[2]-cz),v[1]-minY]))}
+function assembledTris(){
+  const withBalls=document.getElementById('stlBalls')?.checked!==false;
+  if(typeof THREE!=='undefined'&&scene&&figure.root&&figure.root.traverse){
+    const raw=[];figure.root.updateMatrixWorld(true);
+    const jset=new Set(Object.values(jointMeshes));const v=new THREE.Vector3();
+    figure.root.traverse(o=>{if(!o.isMesh||jset.has(o))return;const g=o.geometry;if(!g||!g.attributes.position)return;const pos=g.attributes.position,idx=g.index;const get=i=>{v.fromBufferAttribute(pos,i).applyMatrix4(o.matrixWorld);return [v.x,v.y,v.z]};if(idx){for(let i=0;i<idx.count;i+=3)raw.push([get(idx.getX(i)),get(idx.getX(i+1)),get(idx.getX(i+2))])}else{for(let i=0;i<pos.count;i+=3)raw.push([get(i),get(i+1),get(i+2)])}});
+    if(!raw.length)return fallbackFigureTris(withBalls);
+    let minY=1e9,maxY=-1e9;raw.forEach(tr=>tr.forEach(p=>{if(p[1]<minY)minY=p[1];if(p[1]>maxY)maxY=p[1]}));
+    const h=(maxY-minY)||1,s=currentScale/h;
+    if(withBalls){joints.forEach(j=>{const m=jointMeshes[j.id];if(!m)return;const p=new THREE.Vector3();m.getWorldPosition(p);sphT(raw,p.x,p.y,p.z,(j.ball/2)/s,1,18,12)})}
+    // recompute bounds after balls
+    minY=1e9;let mnx=1e9,mxx=-1e9,mnz=1e9,mxz=-1e9;raw.forEach(tr=>tr.forEach(p=>{if(p[1]<minY)minY=p[1];mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mnz=Math.min(mnz,p[2]);mxz=Math.max(mxz,p[2])}));const cx=(mnx+mxx)/2,cz=(mnz+mxz)/2;
+    return raw.map(tr=>tr.map(p=>[(p[0]-cx)*s,-(p[2]-cz)*s,(p[1]-minY)*s]));
+  }
+  return fallbackFigureTris(withBalls);
+}
+function fallbackFigureTris(withBalls){
+  const t=[],f=currentScale/150,J=id=>joints.find(j=>j.id===id);
+  const ball=(x,y,z,id)=>{if(withBalls)sphT(t,x,y,z,J(id).ball/2*f)};
+  // legs, torso, arms, head in Y-up units (mm)
+  [-13,13].forEach(x=>{boxT(t,x,3*f,4*f,13*f,6*f,28*f);cylT(t,x,28*f,0,8*f,44*f);ball(x,52*f,0,x<0?'kneeL':'kneeR');cylT(t,x,76*f,0,10*f,46*f);ball(x,100*f,0,x<0?'hipL':'hipR')});
+  boxT(t,0,108*f,0,50*f,26*f,30*f);boxT(t,0,134*f,0,48*f,26*f,28*f);ball(0,120*f,0,'waist');boxT(t,0,168*f,0,60*f,48*f,32*f);ball(0,148*f,0,'chest');
+  [-38,38].forEach(x=>{ball(x,182*f,0,x<0?'shL':'shR');cylT(t,x,160*f,0,8.5*f,40*f);ball(x,138*f,0,x<0?'elL':'elR');cylT(t,x,118*f,0,7*f,36*f);ball(x,98*f,0,x<0?'wrL':'wrR');boxT(t,x,88*f,0,12*f,15*f,6*f)});
+  ball(0,196*f,0,'neck');cylT(t,0,200*f,0,9*f,12*f);sphT(t,0,222*f,0,20*f,1.15);boxT(t,0,226*f,16*f,32*f,12*f,5*f);
+  return yUpToSTL(t);
+}
+function partsTris(){
+  const withBalls=document.getElementById('stlBalls')?.checked!==false;
+  const f=currentScale/150,J=id=>joints.find(j=>j.id===id);
+  const headF=parseFloat(document.getElementById('v-head')?.textContent)||1,bulkF=parseFloat(document.getElementById('v-bulk')?.textContent)||1;
+  const parts=[];
+  const mk=(name,w,d,build)=>{const t=[];const h=build(t);parts.push({name,t,w:w*f,d:d*f,h:h})};
+  const socket=(t,joint,y,h)=>{if(!withBalls)return y;const rI=joint.ball/2+joint.clear;tubeT(t,0,y+h/2,0,rI+Math.max(1.2,1.3*f),rI,h);return y+h};
+  const ballTop=(t,joint,y,r)=>{if(!withBalls)return y;cylT(t,0,y+joint.ball*0.22,0,Math.max(1.4,joint.ball*0.26),joint.ball*0.44+2);sphT(t,0,y+joint.ball*0.4+joint.ball/2,0,joint.ball/2);return y+joint.ball*0.4+joint.ball};
+  mk('Head',42,42,t=>{let y=0;if(withBalls){sphT(t,0,J('neck').ball/2,0,J('neck').ball/2);cylT(t,0,J('neck').ball+3*f,0,4.2*f,7*f)}y=J('neck').ball+6*f;const r=20*f*headF;sphT(t,0,y+r*1.02,0,r,1.15);boxT(t,0,y+r*1.1,r*0.82,32*f*headF,11*f,4*f);return y+r*1.02+r*1.15});
+  mk('NeckPeg',16,16,t=>{if(withBalls)sphT(t,0,J('neck').ball/2,0,J('neck').ball/2);cylT(t,0,J('neck').ball+3*f,0,4.2*f,8*f);if(withBalls)sphT(t,0,J('neck').ball+6*f+J('neck').ball/2,0,J('neck').ball/2);return J('neck').ball+6*f+J('neck').ball});
+  mk('TorsoUpper',62,34,t=>{let y=0;if(withBalls){sphT(t,0,J('chest').ball/2,0,J('chest').ball/2);y=J('chest').ball*0.8}boxT(t,0,y+24*f,0,60*f*bulkF,48*f,32*f);y+=48*f;y=socket(t,J('neck'),y-2,Math.max(6,J('neck').ball*0.9));return y});
+  mk('TorsoLower',50,30,t=>{let y=0;if(withBalls){sphT(t,0,J('waist').ball/2,0,J('waist').ball/2);y=J('waist').ball*0.8}boxT(t,0,y+13*f,0,48*f*bulkF,26*f,28*f);return y+26*f});
+  mk('Pelvis',52,32,t=>{let y=0;if(withBalls){const rI=J('hipL').ball/2+J('hipL').clear,h=Math.max(6,J('hipL').ball*0.85);tubeT(t,-15*f,y+h/2,0,rI+1.3,rI,h);tubeT(t,15*f,y+h/2,0,rI+1.3,rI,h);y=h-2}boxT(t,0,y+13*f,0,50*f*bulkF,26*f,30*f);return y+26*f});
+  const limb=(name,len,r,topJ,botJ)=>mk(name,Math.max(20,topJ.ball+8),Math.max(20,topJ.ball+8),t=>{let y=socket(t,botJ,0,Math.max(5.5,botJ.ball*0.85));cylT(t,0,y+len*f/2-1,0,r*f,len*f,20,r*f*0.92);y+=len*f-2;y=ballTop(t,topJ,y);return y});
+  limb('UpperArmL',40,8.8,J('shL'),J('elL'));limb('UpperArmR',40,8.8,J('shR'),J('elR'));
+  limb('ForearmL',36,7.4,J('elL'),J('wrL'));limb('ForearmR',36,7.4,J('elR'),J('wrR'));
+  const hand=(name,j)=>mk(name,16,10,t=>{let y=ballTop(t,j,0);boxT(t,0,y+7*f,0,12*f,15*f,6*f);return y+14*f});hand('HandL',J('wrL'));hand('HandR',J('wrR'));
+  limb('ThighL',46,10.6,J('hipL'),J('kneeL'));limb('ThighR',46,10.6,J('hipR'),J('kneeR'));
+  limb('ShinL',44,8.2,J('kneeL'),J('ankL'));limb('ShinR',44,8.2,J('kneeR'),J('ankR'));
+  const foot=(name,j)=>mk(name,16,32,t=>{boxT(t,0,3*f,4*f,13*f,6*f,28*f);if(withBalls){cylT(t,0,8*f,-3*f,Math.max(1.3,j.ball*0.26),6*f);sphT(t,0,12*f+j.ball/2,-3*f,j.ball/2)}return 12*f+j.ball});
+  foot('FootL',J('ankL'));foot('FootR',J('ankR'));
+  // shelf-pack parts on a plate (local Y-up -> STL Z-up)
+  const out=[],gap=7,rowW=190*f;let cx=0,cy=0,rowD=0;
+  parts.forEach(p=>{if(cx>0&&cx+p.w>rowW){cx=0;cy+=rowD+gap;rowD=0}const ox=cx+p.w/2,oy=cy+p.d/2;p.t.forEach(tr=>out.push(tr.map(v=>[ox+v[0],oy+v[2],v[1]])));cx+=p.w+gap;rowD=Math.max(rowD,p.d)});
+  return out;
+}
+function downloadSTL(kind){
+  const tris=kind==='parts'?partsTris():assembledTris();
+  const blob=stlBlob(tris);const name=kind==='parts'?`figurelab-parts-${currentScale}mm.stl`:`figurelab-figure-${currentScale}mm.stl`;
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+  const meta=document.getElementById('stlMeta');if(meta)meta.innerHTML=`<b style="color:var(--ink)">${name}</b> — ${tris.length.toLocaleString()} triangles · ${(blob.size/1024).toFixed(0)} KB · ${currentScale} mm · binary STL, Z-up.`+(kind==='parts'?' 17 separate parts on one plate; socket bores = ball + 2× clearance.':' Current pose &amp; proportions baked in.');
+}
+// init UI
+renderJointList(); selectJoint(joints[0]); renderParts(); updatePrintScore(); setTimeout(resize,50); setTimeout(resize,400);
+</script>
+</body>
+</html>
