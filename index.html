@@ -103,6 +103,14 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
 .badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:11px;font-weight:700}
 .badge.ok{background:#10382f;color:#5eead4}.badge.warn{background:#3a2a05;color:#fcd34d}.badge.bad{background:#3a1216;color:#fca5a5}
 @media(prefers-color-scheme:light){.badge.ok{background:#dcfce7;color:#166534}.badge.warn{background:#fef3c7;color:#92400e}.badge.bad{background:#fee2e2;color:#991b1b}}
+#canvasWrap.blank .view-hud{display:none}
+#startOverlay{position:absolute;inset:0;z-index:3;display:grid;place-items:center;padding:16px}
+.start-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.start-import{padding:14px;font-size:15px}
+.start-or{text-align:center;font-size:12px;color:var(--muted)}
+.start-temps{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.start-temps button{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:10px;padding:10px;cursor:pointer;text-align:left}
+.start-temps button b{font-size:14px;display:block}
 #stlDrop{border:1.5px dashed var(--line);border-radius:10px;padding:14px;background:var(--panel2);text-align:center}
 #stlDrop.drag{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, var(--panel2))}
 #canvasWrap.drag{outline:2px solid var(--accent);outline-offset:-2px}
@@ -162,6 +170,7 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
     <span style="color:var(--teal)">● Ready</span>
   </div>
   <button class="btn" onclick="resetAll()">Reset</button>
+  <button class="btn" onclick="document.getElementById('stlFile').click()">Import STL ↑</button>
   <button class="btn btn-primary" onclick="downloadSTL('assembled')">Export STL ↓</button>
 </header>
 
@@ -197,7 +206,7 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
       <span class="pill"><label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="showJoints" checked onchange="toggleJoints(this.checked)" style="accent-color:var(--accent)"> Show joints</label></span>
       <span class="pill">Exploded <input type="range" min="0" max="100" value="0" style="width:90px" oninput="setExploded(this.value)"> <span id="expVal">0%</span></span>
     </div>
-    <div id="canvasWrap">
+    <div id="canvasWrap" class="blank">
       <canvas id="scene"></canvas>
       <div id="fallback" role="img" aria-label="Articulated action figure blank with orange joint markers at neck, shoulders, elbows, wrists, chest, waist, hips, knees and ankles">
         <svg viewBox="0 0 300 420" fill="none" aria-hidden="true">
@@ -229,6 +238,13 @@ td{padding:7px 6px;border-bottom:1px solid var(--line)}
           </g>
           <text x="150" y="412" text-anchor="middle" fill="#9aa1b0" font-size="11" font-family="monospace">2D PREVIEW</text>
         </svg>
+      </div>
+      <div id="startOverlay">
+        <div class="start-card">
+          <button class="btn btn-primary start-import" type="button" onclick="document.getElementById('stlFile').click()">Import STL ↑</button>
+          <div class="start-or">or start from a template</div>
+          <div class="start-temps" id="startTemps"></div>
+        </div>
       </div>
       <div class="view-hud">
         <div class="hud-card">
@@ -407,7 +423,7 @@ const templates=[
 ];
 // templates UI
 const tWrap=document.getElementById('templates');
-templates.forEach(t=>{const b=document.createElement('button');b.className='temp'+(t.id==='hero'?' on':'');b.innerHTML=`<b>${t.name}</b>`;b.onclick=()=>{document.querySelectorAll('.temp').forEach(x=>x.classList.remove('on'));b.classList.add('on');applyTemplate(t)};tWrap.appendChild(b)});
+templates.forEach(t=>{const b=document.createElement('button');b.className='temp';b.innerHTML=`<b>${t.name}</b>`;b.onclick=()=>{document.querySelectorAll('.temp').forEach(x=>x.classList.remove('on'));b.classList.add('on');applyTemplate(t)};tWrap.appendChild(b);const sb=document.createElement('button');sb.innerHTML=`<b>${t.name}</b>`;sb.onclick=()=>b.click();document.getElementById('startTemps').appendChild(sb)});
 
 // ---------- Three.js figure ----------
 let scene,camera,renderer,controls,figure={},jointMeshes={},partMeshes=[],mats={},wire=false;
@@ -496,6 +512,9 @@ function onPick(e){
   if(hits.length){const id=hits[0].object.userData.jointId; const j=joints.find(x=>x.id===id); if(j) selectJoint(j)}
 }
 if(typeof THREE!=='undefined' && THREE.OrbitControls){ try{ initThree(); }catch(err){ initFallback(); } } else { initFallback(); }
+// start blank: figure stays hidden until a template is chosen or an STL is imported
+if(figure.root) figure.root.visible=false;
+const startSvg=document.querySelector('#fallback svg'); if(startSvg) startSvg.style.display='none';
 
 // ---------- Joint UI ----------
 const jointList=document.getElementById('jointList');
@@ -557,12 +576,12 @@ function applyPose(name){
   if(name==='walk'){setRot('hipL',-32,0,0); setRot('kneeL',18,0,0); setRot('hipR',28,0,0); setRot('kneeR',42,0,0); setRot('shL',26,0,-10); setRot('shR',-26,0,10); setRot('elL',-22,0,0); setRot('elR',-18,0,0)}
   if(name==='sit'){setRot('hipL',-88,0,-4); setRot('hipR',-88,0,4); setRot('kneeL',88,0,0); setRot('kneeR',88,0,0); setRot('ankL',-6,0,0); setRot('ankR',-6,0,0); figure.root.position.y=-0.55}
   if(name==='reach'){setRot('shR',-88,0,8); setRot('elR',-6,0,0); setRot('shL',10,0,-18); setRot('elL',-38,0,0); setRot('neck',0,-22,0); setRot('waist',0,-14,0)}
-  document.getElementById('hudTitle').textContent=document.querySelector('.temp.on b')?.textContent+' — '+name.replace('tpose','T-Pose').replace('apose','A-Pose');
+  document.getElementById('hudTitle').textContent=(document.querySelector('.temp.on b')?.textContent||templates.find(t=>t.id===currentTemplate).name)+' — '+name.replace('tpose','T-Pose').replace('apose','A-Pose');
   syncPoseSliders();
 }
 function randomPose(){['shL','shR','elL','elR','hipL','hipR','kneeL','kneeR','neck','waist'].forEach(k=>setRot(k,(Math.random()*50-25)|0,(Math.random()*30-15)|0,(Math.random()*40-20)|0)); syncPoseSliders()}
 // figure / scale / props
-function applyTemplate(t){currentTemplate=t.id; propChange('head',t.head*100,true); propChange('shoulder',t.shoulder*100,true); propChange('bulk',t.bulk*100,true); if(t.id==='bulk'){joints.forEach(j=>j.ball=Math.min(10,j.ball*1.2))} document.getElementById('hudTitle').textContent=t.name+' — T-Pose'; selectJoint(selectedJoint)}
+function applyTemplate(t){chooseFigure(); currentTemplate=t.id; propChange('head',t.head*100,true); propChange('shoulder',t.shoulder*100,true); propChange('bulk',t.bulk*100,true); if(t.id==='bulk'){joints.forEach(j=>j.ball=Math.min(10,j.ball*1.2))} document.getElementById('hudTitle').textContent=t.name+' — T-Pose'; selectJoint(selectedJoint)}
 function propChange(kind,val,quiet){const f=val/100; if(kind==='head'){figure.headMesh.scale.set(f,1.15*f,f); document.getElementById('v-head').textContent=f.toFixed(2)+'×'} if(kind==='shoulder'){figure.chestMesh.scale.x=f; figure.shL.position.x=-0.38*f; figure.shR.position.x=0.38*f; document.getElementById('v-shoulder').textContent=f.toFixed(2)+'×'} if(kind==='bulk'){partMeshes.forEach(m=>{if(m.geometry.type==='CylinderGeometry'||m.geometry.type==='BoxGeometry') m.scale.x=m.scale.z=f}); document.getElementById('v-bulk').textContent=f.toFixed(2)+'×'}}
 function setScale(mm){currentScale=+mm; const s=mm/150; figure.root.scale.setScalar(s*0.95); document.getElementById('hudHeight').textContent=(+mm).toFixed(1)+' mm'; document.getElementById('statHeight').textContent=mm; document.getElementById('scaleSel').value=String(mm); renderParts(); updatePrintScore(); if(typeof importedSTL!=='undefined'&&importedSTL){renderImportedMeta(); showImportedMesh()}}
 function quickScale(mm,btn){document.querySelectorAll('#scaleRow button').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); setScale(mm)}
@@ -579,7 +598,7 @@ document.querySelectorAll('.top-nav button').forEach(b=>b.onclick=()=>{document.
 function setView(btn,view){document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); if(!camera||!controls)return; if(view==='front')camera.position.set(0,1.5,5.4); if(view==='side')camera.position.set(5.4,1.5,0); if(view==='top')camera.position.set(0,6,0.01); if(view==='orbit')camera.position.set(3.2,2.2,5.2); controls.target.set(0,1.45,0)}
 function toggleJoints(on){Object.values(jointMeshes).forEach(m=>m.visible=on)}
 function toggleWireframe(){wire=!wire; Object.values(mats).forEach(m=>m.wireframe=wire)}
-function resetAll(){applyPose('tpose'); setExploded(0); document.querySelector('input[oninput^="setExploded"]').value=0; setScale(150)}
+function resetAll(){applyPose('tpose'); setExploded(0); document.querySelector('input[oninput^="setExploded"]').value=0; setScale(150); clearImported(); figureChosen=false; if(figure.root) figure.root.visible=false; const fs=document.querySelector('#fallback svg'); if(fs) fs.style.display='none'; document.querySelectorAll('.temp').forEach(x=>x.classList.remove('on')); showStart()}
 // paint
 const palettes={body:[0x2f6fde,0x111827,0xb91c1c,0x15803d,0x7c3aed,0xeab308,0xf8fafc,0x0f766e],accent:[0xff5a1f,0xfacc15,0x111827,0xf8fafc,0xdc2626,0x2563eb,0x94a3b8,0x78350f],skin:[0xe8b48c,0xc68642,0x8d5524,0xf1c27d,0xffdbac,0x6b7280,0x22c55e,0x94a3b8]};
 Object.entries(palettes).forEach(([region,colors])=>{const wrapEl=document.querySelector(`.swatches[data-region="${region}"]`); colors.forEach((c,i)=>{const b=document.createElement('button'); b.className='swatch'+(i===0?' on':''); b.style.background='#'+c.toString(16).padStart(6,'0'); b.onclick=()=>{wrapEl.querySelectorAll('.swatch').forEach(x=>x.classList.remove('on')); b.classList.add('on'); mats[region].color.setHex(c)}; wrapEl.appendChild(b)})});
@@ -660,13 +679,18 @@ function skeletonFallbackTris(){const t=[],g=currentScale/245,J=id=>joints.find(
 function shellFallbackTris(){const t=[],g=currentScale/245,J=id=>joints.find(j=>j.id===id);[-13,13].forEach(x=>{boxT(t,x*g,3*g,4*g,13*g,6*g,28*g);cylT(t,x*g,28*g,0,8*g,44*g);cylT(t,x*g,76*g,0,10*g,46*g)});boxT(t,0,108*g,0,50*g,26*g,30*g);boxT(t,0,134*g,0,48*g,26*g,28*g);boxT(t,0,168*g,0,60*g,48*g,32*g);[-38,38].forEach(x=>{cylT(t,x*g,160*g,0,8.5*g,40*g);cylT(t,x*g,118*g,0,7*g,36*g);boxT(t,x*g,88*g,0,12*g,15*g,6*g)});cylT(t,0,200*g,0,9*g,12*g);sphT(t,0,222*g,0,20*g,1.15);boxT(t,0,226*g,16*g,32*g,12*g,5*g);const collar=(x,y,z,id)=>{const j=J(id),rI=j.ball/2+j.clear;tubeT(t,x,y,z,rI+Math.max(1.2,1.3*g),rI,Math.max(5,j.ball*0.9))};collar(0,196*g,0,'neck');collar(0,148*g,0,'chest');collar(0,120*g,0,'waist');collar(-38*g,182*g,0,'shL');collar(38*g,182*g,0,'shR');collar(-38*g,138*g,0,'elL');collar(38*g,138*g,0,'elR');collar(-38*g,98*g,0,'wrL');collar(38*g,98*g,0,'wrR');collar(-13*g,100*g,0,'hipL');collar(13*g,100*g,0,'hipR');collar(-13*g,52*g,0,'kneeL');collar(13*g,52*g,0,'kneeR');collar(-13*g,10*g,0,'ankL');collar(13*g,10*g,0,'ankR');return yUpToSTL(t)}
 function skeletonTris(){const rawAll=collectSceneRaw();if(!rawAll.length)return skeletonFallbackTris();const tf=sceneTransform(rawAll),raw=[],jp={};Object.entries(jointMeshes).forEach(([id,m])=>{const p=new THREE.Vector3();m.getWorldPosition(p);jp[id]=[p.x,p.y,p.z]});const J=id=>joints.find(j=>j.id===id);const bone=(a,b,rMm)=>{if(a&&b)boneT(raw,a,b,rMm/tf.s,12)};const mid=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];const pelvisC=(jp.hipL&&jp.hipR)?mid(jp.hipL,jp.hipR):jp.waist;bone(pelvisC,jp.waist,2.6);bone(jp.waist,jp.chest,2.6);bone(jp.chest,jp.neck,2.2);bone(jp.shL,jp.shR,2.4);bone(jp.hipL,jp.hipR,2.4);bone(jp.chest,jp.shL,2.2);bone(jp.chest,jp.shR,2.2);bone(pelvisC,jp.hipL,2.2);bone(pelvisC,jp.hipR,2.2);bone(jp.shL,jp.elL,2.4);bone(jp.elL,jp.wrL,2.0);bone(jp.shR,jp.elR,2.4);bone(jp.elR,jp.wrR,2.0);bone(jp.hipL,jp.kneeL,2.8);bone(jp.kneeL,jp.ankL,2.4);bone(jp.hipR,jp.kneeR,2.8);bone(jp.kneeR,jp.ankR,2.4);joints.forEach(j=>{const p=jp[j.id];if(p)sphT(raw,p[0],p[1],p[2],(j.ball/2)/tf.s,1,18,12)});if(figure.headMesh&&figure.headMesh.getWorldPosition){const p=new THREE.Vector3();figure.headMesh.getWorldPosition(p);sphT(raw,p.x,p.y,p.z,0.13,1.15,18,12);if(jp.neck)bone(jp.neck,[p.x,p.y,p.z],2.0)}if(pelvisC)sphT(raw,pelvisC[0],pelvisC[1],pelvisC[2],0.09,0.8,16,12);return applySceneTransform(raw,tf)}
 function shellTris(){const raw=collectSceneRaw();if(!raw.length)return shellFallbackTris();const tf=sceneTransform(raw);joints.forEach(j=>{const m=jointMeshes[j.id];if(!m)return;const p=new THREE.Vector3();m.getWorldPosition(p);const rI=(j.ball/2+j.clear)/tf.s,rO=rI+Math.max(1.2,1.3*currentScale/150)/tf.s,h=Math.max(5,j.ball*0.9)/tf.s;tubeT(raw,p.x,p.y,p.z,rO,rI,h,22)});return applySceneTransform(raw,tf)}
+// ---------- Blank start state ----------
+let started=false, figureChosen=false;
+function dismissStart(){started=true; const o=document.getElementById('startOverlay'); if(o)o.style.display='none'; document.getElementById('canvasWrap').classList.remove('blank'); resize()}
+function showStart(){started=false; const o=document.getElementById('startOverlay'); if(o)o.style.display='grid'; document.getElementById('canvasWrap').classList.add('blank')}
+function chooseFigure(){figureChosen=true; if(figure.root) figure.root.visible=true; const fs=document.querySelector('#fallback svg'); if(fs) fs.style.display=''; dismissStart()}
 // ---------- STL import (binary or ASCII, parsed in-browser) ----------
 let importedSTL=null,importedMesh=null,importOverlay=false;
 function parseSTLBuffer(buf){const dv=new DataView(buf);let tris=[],format='ascii',binCount=0,isBinary=false;if(buf.byteLength>=84){binCount=dv.getUint32(80,true);if(binCount>0&&84+binCount*50===buf.byteLength)isBinary=true}if(isBinary){format='binary';for(let i=0;i<binCount;i++){const o=84+i*50+12,vs=[];for(let k=0;k<3;k++)vs.push([dv.getFloat32(o+k*12,true),dv.getFloat32(o+k*12+4,true),dv.getFloat32(o+k*12+8,true)]);if(vs.every(v=>v.every(Number.isFinite)))tris.push(vs)}}else{const text=new TextDecoder().decode(buf);if(!/facet/i.test(text))throw new Error('no facets found — not an STL?');const verts=[],re=/vertex\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)/g;let m;while((m=re.exec(text))!==null){const v=[parseFloat(m[1]),parseFloat(m[2]),parseFloat(m[3])];if(v.every(Number.isFinite))verts.push(v)}for(let i=0;i+2<verts.length;i+=3)tris.push([verts[i],verts[i+1],verts[i+2]])}if(!tris.length)throw new Error('no triangles found');const mn=[1e30,1e30,1e30],mx=[-1e30,-1e30,-1e30];tris.forEach(tr=>tr.forEach(v=>{for(let a=0;a<3;a++){mn[a]=Math.min(mn[a],v[a]);mx[a]=Math.max(mx[a],v[a])}}));const dims={w:mx[0]-mn[0],d:mx[1]-mn[1],h:mx[2]-mn[2]};if(!(dims.h>0)){dims.h=dims.d}return{name:'model.stl',format,tris,min:mn,max:mx,dims}}
 function renderImportedMeta(){const el=document.getElementById('importMeta'),act=document.getElementById('importActions');if(!importedSTL){if(el)el.textContent='No STL imported.';if(act)act.style.display='none';return}const d=importedSTL.dims,sc=currentScale/(d.h||1);if(el)el.innerHTML=`<b style="color:var(--ink)">${importedSTL.name}</b> — ${importedSTL.format} STL · ${importedSTL.tris.length.toLocaleString()} triangles<br>${d.w.toFixed(1)} × ${d.d.toFixed(1)} × ${d.h.toFixed(1)} mm → ${currentScale} mm tall`;if(act)act.style.display='flex';window.__importedSTLInfo={name:importedSTL.name,format:importedSTL.format,triangles:importedSTL.tris.length,dims:{...d},scaledHeight:currentScale,scale:sc}}
-function showImportedMesh(){if(!importedSTL)return;if(typeof THREE==='undefined'||!scene||!figure.root||!figure.root.traverse)return;try{const box=new THREE.Box3().setFromObject(figure.root),size=new THREE.Vector3();box.getSize(size);const sceneH=size.y||2.9,sceneW=size.x||1,k=sceneH/(importedSTL.dims.h||1),cx=(importedSTL.min[0]+importedSTL.max[0])/2,cy=(importedSTL.min[1]+importedSTL.max[1])/2,minZ=importedSTL.min[2];const pos=new Float32Array(importedSTL.tris.length*9);importedSTL.tris.forEach((tr,i)=>{tr.forEach((v,k2)=>{const o=i*9+k2*3;pos[o]=(v[0]-cx)*k;pos[o+1]=(v[2]-minZ)*k;pos[o+2]=-(v[1]-cy)*k})});if(importedMesh){scene.remove(importedMesh);importedMesh.geometry.dispose()}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.computeVertexNormals();importedMesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x22c5a0,roughness:0.55,metalness:0.05,flatShading:true,side:THREE.DoubleSide}));const impW=importedSTL.dims.w*k;importedMesh.position.y=box.min.y;importedMesh.position.x=importOverlay?0:(sceneW/2+impW/2+0.35);scene.add(importedMesh)}catch(e){/* viewport unavailable (2D fallback) — import data + re-export still work */}}
-function handleSTLFile(file){if(!file)return;const done=buf=>{try{const parsed=parseSTLBuffer(buf);parsed.name=file.name||'model.stl';importedSTL=parsed;renderImportedMeta();showImportedMesh();switchTabByName('print')}catch(err){const el=document.getElementById('importMeta');if(el)el.textContent='Could not parse that STL: '+(err&&err.message?err.message:err)}};if(file.arrayBuffer){file.arrayBuffer().then(done).catch(()=>{const r=new FileReader();r.onload=()=>done(r.result);r.readAsArrayBuffer(file)})}else{const r=new FileReader();r.onload=()=>done(r.result);r.readAsArrayBuffer(file)}}
-function clearImported(){importedSTL=null;window.__importedSTLInfo=null;if(importedMesh&&typeof THREE!=='undefined'&&scene){scene.remove(importedMesh);importedMesh.geometry.dispose();importedMesh=null}const fi=document.getElementById('stlFile');if(fi)fi.value='';renderImportedMeta()}
+function showImportedMesh(){if(!importedSTL)return;if(typeof THREE==='undefined'||!scene||!figure.root||!figure.root.traverse)return;try{const box=new THREE.Box3().setFromObject(figure.root),size=new THREE.Vector3();box.getSize(size);const sceneH=size.y||2.9,sceneW=size.x||1,k=sceneH/(importedSTL.dims.h||1),cx=(importedSTL.min[0]+importedSTL.max[0])/2,cy=(importedSTL.min[1]+importedSTL.max[1])/2,minZ=importedSTL.min[2];const pos=new Float32Array(importedSTL.tris.length*9);importedSTL.tris.forEach((tr,i)=>{tr.forEach((v,k2)=>{const o=i*9+k2*3;pos[o]=(v[0]-cx)*k;pos[o+1]=(v[2]-minZ)*k;pos[o+2]=-(v[1]-cy)*k})});if(importedMesh){scene.remove(importedMesh);importedMesh.geometry.dispose()}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.computeVertexNormals();importedMesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x22c5a0,roughness:0.55,metalness:0.05,flatShading:true,side:THREE.DoubleSide}));const impW=importedSTL.dims.w*k;importedMesh.position.y=box.min.y;importedMesh.position.x=(importOverlay||!figureChosen)?0:(sceneW/2+impW/2+0.35);scene.add(importedMesh)}catch(e){/* viewport unavailable (2D fallback) — import data + re-export still work */}}
+function handleSTLFile(file){if(!file)return;const done=buf=>{try{const parsed=parseSTLBuffer(buf);parsed.name=file.name||'model.stl';importedSTL=parsed;renderImportedMeta();showImportedMesh();dismissStart();switchTabByName('print')}catch(err){const el=document.getElementById('importMeta');if(el)el.textContent='Could not parse that STL: '+(err&&err.message?err.message:err)}};if(file.arrayBuffer){file.arrayBuffer().then(done).catch(()=>{const r=new FileReader();r.onload=()=>done(r.result);r.readAsArrayBuffer(file)})}else{const r=new FileReader();r.onload=()=>done(r.result);r.readAsArrayBuffer(file)}}
+function clearImported(){importedSTL=null;window.__importedSTLInfo=null;if(importedMesh&&typeof THREE!=='undefined'&&scene){scene.remove(importedMesh);importedMesh.geometry.dispose();importedMesh=null}const fi=document.getElementById('stlFile');if(fi)fi.value='';renderImportedMeta();if(!figureChosen)showStart()}
 function toggleImportOverlay(){importOverlay=!importOverlay;const b=document.getElementById('importOverlayBtn');if(b)b.textContent=importOverlay?'Show side-by-side':'Overlay on figure';showImportedMesh()}
 function importedTris(){if(!importedSTL)return[];const sc=currentScale/(importedSTL.dims.h||1),cx=(importedSTL.min[0]+importedSTL.max[0])/2,cy=(importedSTL.min[1]+importedSTL.max[1])/2,minZ=importedSTL.min[2];return importedSTL.tris.map(tr=>tr.map(v=>[(v[0]-cx)*sc,(v[1]-cy)*sc,(v[2]-minZ)*sc]))}
 function downloadSTL(kind){
